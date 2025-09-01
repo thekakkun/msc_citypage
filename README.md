@@ -1,0 +1,2 @@
+# msc_citypage_weather
+Rust library to retrieve current weather conditions and 7-days forecast for Canadian cities from the Meteorological Service of Canada (MSC)
