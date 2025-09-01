@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema elementFormDefault="qualified" attributeFormDefault="unqualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
-	<xs:include schemaLocation="weather.xsd"/>
-	<xs:include schemaLocation="general.xsd"/>
-	<xs:include schemaLocation="forecastFull.xsd"/>
-	<xs:element name="siteData">
-		<xs:complexType>
-			<xs:sequence>
-				<xs:element name="license" type="xs:string"/>
-				<xs:element name="dateTime" type="dateStampType" minOccurs="2" maxOccurs="2"/>
-				<xs:element name="location" type="locationType"/>
-				<xs:element name="warnings" type="warningsType"/>
-				<xs:element name="currentConditions" type="currentConditionsType"/>
-				<xs:element name="forecastGroup" type="forecastGroupTypeFull"/>
-				<xs:element name="hourlyForecastGroup" type="hourlyForecastGroupTypeFull"/>
-				<xs:element name="riseSet" type="riseSetType"/>
-			</xs:sequence>
-		</xs:complexType>
-	</xs:element>
+<xs:schema elementFormDefault="qualified" attributeFormDefault="unqualified"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="weather.xsd" />
+    <xs:include schemaLocation="general.xsd" />
+    <xs:include schemaLocation="forecastFull.xsd" />
+    <xs:element name="siteData">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="license" type="xs:string" />
+                <xs:element name="dateTime" type="dateStampType" minOccurs="2" maxOccurs="2" />
+                <xs:element name="location" type="locationType" />
+                <xs:element name="warnings" type="warningsType" />
+                <xs:element name="currentConditions" type="currentConditionsType" />
+                <xs:element name="forecastGroup" type="forecastGroupTypeFull" />
+                <xs:element name="hourlyForecastGroup" type="hourlyForecastGroupTypeFull" />
+                <xs:element name="riseSet" type="riseSetType" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 </xs:schema>
