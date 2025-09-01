@@ -20,8 +20,8 @@ fn main() -> Result<(), Error> {
         Schema::File("schemas/siteList.xsd".into()),
         Schema::File("schemas/weather.xsd".into()),
     ];
-    config.interpreter.flags = InterpreterFlags::all();
-    config.optimizer.flags = OptimizerFlags::all();
+    config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
+    config.optimizer.flags = OptimizerFlags::all() - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS;
     config.generator.flags = GeneratorFlags::all();
 
     let config = config.with_render_steps([
@@ -56,6 +56,9 @@ fn replace_variant_names(mut types: MetaTypes) -> MetaTypes {
                 match variant.ident.name.as_str() {
                     "%" => {
                         variant.display_name = Some("Percent".to_string());
+                    }
+                    "" => {
+                        variant.display_name = Some("None".to_string());
                     }
                     "ce soir et cette nuit" => {
                         variant.display_name = Some("ceSoirEtCetteNuit".to_string());

@@ -1,9 +1,7 @@
-use num::{BigInt, BigUint};
 use xsd_parser::{
     models::schema::Namespace,
     quick_xml::{
         DeserializeBytes, DeserializeReader, Error, ErrorKind, RawByteStr, WithDeserializer,
-        XmlReader,
     },
 };
 pub const NS_XS: Namespace = Namespace::new_const(b"http://www.w3.org/2001/XMLSchema");
@@ -36,7 +34,7 @@ impl WithDeserializer for CalculatedHumidexType {
 }
 #[derive(Debug)]
 pub struct CalculatedWindChillType {
-    pub index: Option<BigInt>,
+    pub index: Option<::core::primitive::i32>,
     pub unit_type: Option<ValidUnitTypesType>,
     pub class: Option<ValidWindChillClassType>,
     pub qa_value: Option<QaValueType>,
@@ -154,10 +152,11 @@ pub struct DateStampType {
 impl WithDeserializer for DateStampType {
     type Deserializer = quick_xml_deserialize::DateStampTypeDeserializer;
 }
-pub type DateTimeUtcType = BigInt;
+pub type DateTimeUtcType = ::core::primitive::i32;
 #[derive(Debug)]
 pub struct DayType {
     pub name: ValidDayNamesType,
+    pub content: ::core::primitive::usize,
 }
 impl WithDeserializer for DayType {
     type Deserializer = quick_xml_deserialize::DayTypeDeserializer;
@@ -233,7 +232,7 @@ impl WithDeserializer for HourlyForecastGroupTypeFullType {
 }
 #[derive(Debug)]
 pub struct HourlyForecastTypeFullType {
-    pub date_time_utc: Option<BigInt>,
+    pub date_time_utc: Option<::core::primitive::i32>,
     pub condition: xs::AnyType,
     pub icon_code: IconCodeHourlyType,
     pub temperature: TemperatureHourlyType,
@@ -300,29 +299,26 @@ impl WithDeserializer for LopHourlyType {
 }
 #[derive(Debug)]
 pub enum MinuteType {
-    String(::std::string::String),
-    BigInt(BigInt),
+    None,
+    I32(::core::primitive::i32),
 }
 impl DeserializeBytes for MinuteType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
     where
-        R: XmlReader,
+        R: DeserializeReader,
     {
-        let mut errors = Vec::new();
-        match ::std::string::String::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::String(value)),
-            Err(error) => errors.push(Box::new(error)),
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
         }
-        match BigInt::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::BigInt(value)),
-            Err(error) => errors.push(Box::new(error)),
-        }
-        Err(reader.map_error(ErrorKind::InvalidUnion(errors.into())))
     }
 }
 #[derive(Debug)]
 pub struct MonthType {
     pub name: ValidMonthNamesType,
+    pub content: ::core::primitive::i32,
 }
 impl WithDeserializer for MonthType {
     type Deserializer = quick_xml_deserialize::MonthTypeDeserializer;
@@ -337,7 +333,24 @@ pub struct NameType {
 impl WithDeserializer for NameType {
     type Deserializer = quick_xml_deserialize::NameTypeDeserializer;
 }
-pub type PeriodRangeType = ::std::string::String;
+#[derive(Debug)]
+pub enum PeriodRangeType {
+    String(::std::string::String),
+    None,
+}
+impl DeserializeBytes for PeriodRangeType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::String(::std::string::String::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub struct PeriodType {
     pub text_forecast_name: Option<ValidDayNamesType>,
@@ -369,7 +382,7 @@ pub struct PrecipType {
     pub unit_type: Option<ValidUnitTypesType>,
     pub class: Option<ValidPrecipClassesType>,
     pub year: Option<::std::string::String>,
-    pub period: Option<::std::string::String>,
+    pub period: Option<PeriodRangeType>,
     pub qa_value: Option<QaValueType>,
     pub content: ValidPrecipsType,
 }
@@ -503,8 +516,8 @@ pub type SnowLevelType = CloudPrecipType;
 #[derive(Debug)]
 pub struct StationType {
     pub code: Option<::std::string::String>,
-    pub lat: Option<::std::string::String>,
-    pub lon: Option<::std::string::String>,
+    pub lat: Option<PeriodRangeType>,
+    pub lon: Option<PeriodRangeType>,
     pub country: Option<ValidCountryCodeType>,
     pub content: ::std::string::String,
 }
@@ -526,7 +539,7 @@ pub struct TemperatureType {
     pub unit_type: Option<ValidUnitTypesType>,
     pub class: Option<ValidTemperatureClassesType>,
     pub year: Option<::std::string::String>,
-    pub period: Option<::std::string::String>,
+    pub period: Option<PeriodRangeType>,
     pub qa_value: Option<QaValueType>,
     pub content: ValidPressuresType,
 }
@@ -581,6 +594,7 @@ pub enum UvCategoryType {
     élevé,
     Trèsélevé,
     Extrême,
+    None,
 }
 impl DeserializeBytes for UvCategoryType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -598,6 +612,7 @@ impl DeserializeBytes for UvCategoryType {
             b"\xC3\xA9lev\xC3\xA9" => Ok(Self::élevé),
             b"tr\xC3\xA8s \xC3\xA9lev\xC3\xA9" => Ok(Self::Trèsélevé),
             b"extr\xC3\xAAme" => Ok(Self::Extrême),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -776,7 +791,7 @@ impl DeserializeBytes for ValidDayNamesType {
         }
     }
 }
-pub type ValidDayNumbersType = BigUint;
+pub type ValidDayNumbersType = ::core::primitive::usize;
 #[derive(Debug)]
 pub enum ValidFormatType {
     Png,
@@ -795,29 +810,21 @@ impl DeserializeBytes for ValidFormatType {
 pub type ValidHoursType = MinuteType;
 #[derive(Debug)]
 pub enum ValidHumidexType {
-    String(::std::string::String),
+    None,
     F32(::core::primitive::f32),
-    BigInt(BigInt),
+    I32(::core::primitive::i32),
 }
 impl DeserializeBytes for ValidHumidexType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
     where
-        R: XmlReader,
+        R: DeserializeReader,
     {
-        let mut errors = Vec::new();
-        match ::std::string::String::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::String(value)),
-            Err(error) => errors.push(Box::new(error)),
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
         }
-        match ::core::primitive::f32::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::F32(value)),
-            Err(error) => errors.push(Box::new(error)),
-        }
-        match BigInt::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::BigInt(value)),
-            Err(error) => errors.push(Box::new(error)),
-        }
-        Err(reader.map_error(ErrorKind::InvalidUnion(errors.into())))
     }
 }
 pub type ValidIconCodesType = MinuteType;
@@ -836,8 +843,8 @@ impl DeserializeBytes for ValidIconCodesUnitsType {
         }
     }
 }
-pub type ValidIndexTypesType = BigInt;
-pub type ValidLatLonType = ::std::string::String;
+pub type ValidIndexTypesType = ::core::primitive::i32;
+pub type ValidLatLonType = PeriodRangeType;
 pub type ValidLocationCodeType = ::std::string::String;
 pub type ValidLocationLatLonType = ::std::string::String;
 #[derive(Debug)]
@@ -901,10 +908,11 @@ impl DeserializeBytes for ValidMonthNamesType {
         }
     }
 }
-pub type ValidMonthNumbersType = BigInt;
+pub type ValidMonthNumbersType = ::core::primitive::i32;
 #[derive(Debug)]
 pub enum ValidPopUnitsType {
     Percent,
+    None,
 }
 impl DeserializeBytes for ValidPopUnitsType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -913,6 +921,7 @@ impl DeserializeBytes for ValidPopUnitsType {
     {
         match bytes {
             b"%" => Ok(Self::Percent),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -940,6 +949,7 @@ pub enum ValidPrecipAbbreviatedCodesType {
     NeigeEtPluieVerglaçante,
     NeigeEtBruine,
     PluieVerglaçanteEtBruine,
+    None,
 }
 impl DeserializeBytes for ValidPrecipAbbreviatedCodesType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -967,6 +977,7 @@ impl DeserializeBytes for ValidPrecipAbbreviatedCodesType {
             b"neige et pluie vergla\xC3\xA7ante" => Ok(Self::NeigeEtPluieVerglaçante),
             b"neige et bruine" => Ok(Self::NeigeEtBruine),
             b"pluie vergla\xC3\xA7ante et bruine" => Ok(Self::PluieVerglaçanteEtBruine),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -997,6 +1008,7 @@ pub type ValidPrecipSubTypeForecastHoursType = MinuteType;
 pub enum ValidPrecipUnitsType {
     Mm,
     Cm,
+    None,
 }
 impl DeserializeBytes for ValidPrecipUnitsType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1006,12 +1018,14 @@ impl DeserializeBytes for ValidPrecipUnitsType {
         match bytes {
             b"mm" => Ok(Self::Mm),
             b"cm" => Ok(Self::Cm),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
 }
 #[derive(Debug)]
 pub enum ValidPrecipsType {
+    None,
     Trace,
     F64(::core::primitive::f64),
 }
@@ -1021,6 +1035,7 @@ impl DeserializeBytes for ValidPrecipsType {
         R: DeserializeReader,
     {
         match bytes {
+            b"" => Ok(Self::None),
             b"Trace" => Ok(Self::Trace),
             x => Ok(Self::F64(::core::primitive::f64::deserialize_bytes(
                 reader, x,
@@ -1036,6 +1051,7 @@ pub enum ValidPressureTendenciesType {
     àLaHausse,
     àLaBaisse,
     Stationnaire,
+    None,
 }
 impl DeserializeBytes for ValidPressureTendenciesType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1049,6 +1065,7 @@ impl DeserializeBytes for ValidPressureTendenciesType {
             b"\xC3\xA0 la hausse" => Ok(Self::àLaHausse),
             b"\xC3\xA0 la baisse" => Ok(Self::àLaBaisse),
             b"stationnaire" => Ok(Self::Stationnaire),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1056,6 +1073,7 @@ impl DeserializeBytes for ValidPressureTendenciesType {
 #[derive(Debug)]
 pub enum ValidPressureUnitsType {
     KPa,
+    None,
 }
 impl DeserializeBytes for ValidPressureUnitsType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1064,57 +1082,46 @@ impl DeserializeBytes for ValidPressureUnitsType {
     {
         match bytes {
             b"kPa" => Ok(Self::KPa),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
 }
 #[derive(Debug)]
 pub enum ValidPressuresType {
-    String(::std::string::String),
+    None,
     F64(::core::primitive::f64),
 }
 impl DeserializeBytes for ValidPressuresType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
     where
-        R: XmlReader,
+        R: DeserializeReader,
     {
-        let mut errors = Vec::new();
-        match ::std::string::String::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::String(value)),
-            Err(error) => errors.push(Box::new(error)),
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::F64(::core::primitive::f64::deserialize_bytes(
+                reader, x,
+            )?)),
         }
-        match ::core::primitive::f64::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::F64(value)),
-            Err(error) => errors.push(Box::new(error)),
-        }
-        Err(reader.map_error(ErrorKind::InvalidUnion(errors.into())))
     }
 }
 #[derive(Debug)]
 pub enum ValidRelativeHumiditiesType {
-    String(::std::string::String),
-    BigInt(BigInt),
+    None,
+    I32(::core::primitive::i32),
     F32(::core::primitive::f32),
 }
 impl DeserializeBytes for ValidRelativeHumiditiesType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
     where
-        R: XmlReader,
+        R: DeserializeReader,
     {
-        let mut errors = Vec::new();
-        match ::std::string::String::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::String(value)),
-            Err(error) => errors.push(Box::new(error)),
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::F32(::core::primitive::f32::deserialize_bytes(
+                reader, x,
+            )?)),
         }
-        match BigInt::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::BigInt(value)),
-            Err(error) => errors.push(Box::new(error)),
-        }
-        match ::core::primitive::f32::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::F32(value)),
-            Err(error) => errors.push(Box::new(error)),
-        }
-        Err(reader.map_error(ErrorKind::InvalidUnion(errors.into())))
     }
 }
 pub type ValidRelativeHumidityUnitsType = ValidPopUnitsType;
@@ -1159,6 +1166,7 @@ impl DeserializeBytes for ValidTemperatureClassesType {
 #[derive(Debug)]
 pub enum ValidTemperatureUnitsType {
     C,
+    None,
 }
 impl DeserializeBytes for ValidTemperatureUnitsType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1167,6 +1175,7 @@ impl DeserializeBytes for ValidTemperatureUnitsType {
     {
         match bytes {
             b"C" => Ok(Self::C),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1240,6 +1249,7 @@ pub type ValidUtcOffsetType = ::core::primitive::f64;
 pub enum ValidUnitTypesType {
     Imperial,
     Metric,
+    None,
 }
 impl DeserializeBytes for ValidUnitTypesType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1249,6 +1259,7 @@ impl DeserializeBytes for ValidUnitTypesType {
         match bytes {
             b"imperial" => Ok(Self::Imperial),
             b"metric" => Ok(Self::Metric),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1257,6 +1268,7 @@ pub type ValidVisibilitiesType = ValidPressuresType;
 #[derive(Debug)]
 pub enum ValidVisibilityUnitsType {
     Km,
+    None,
 }
 impl DeserializeBytes for ValidVisibilityUnitsType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1265,11 +1277,12 @@ impl DeserializeBytes for ValidVisibilityUnitsType {
     {
         match bytes {
             b"km" => Ok(Self::Km),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
 }
-pub type ValidWarningCodesType = BigInt;
+pub type ValidWarningCodesType = ::core::primitive::i32;
 #[derive(Debug)]
 pub enum ValidWarningPrioritiesType {
     Urgent,
@@ -1298,6 +1311,7 @@ pub enum ValidWarningTypesType {
     Watch,
     Ended,
     Statement,
+    None,
 }
 impl DeserializeBytes for ValidWarningTypesType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1310,6 +1324,7 @@ impl DeserializeBytes for ValidWarningTypesType {
             b"watch" => Ok(Self::Watch),
             b"ended" => Ok(Self::Ended),
             b"statement" => Ok(Self::Statement),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1342,6 +1357,7 @@ pub enum ValidWindChillClassType {
     Soir,
     Nuit,
     PrèsDe,
+    None,
 }
 impl DeserializeBytes for ValidWindChillClassType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1359,6 +1375,7 @@ impl DeserializeBytes for ValidWindChillClassType {
             b"soir" => Ok(Self::Soir),
             b"nuit" => Ok(Self::Nuit),
             b"pr\xC3\xA8s de" => Ok(Self::PrèsDe),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1390,6 +1407,7 @@ pub enum ValidWindDirectionsType {
     Nnw,
     Nno,
     Vr,
+    None,
 }
 impl DeserializeBytes for ValidWindDirectionsType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1421,6 +1439,7 @@ impl DeserializeBytes for ValidWindDirectionsType {
             b"NNW" => Ok(Self::Nnw),
             b"NNO" => Ok(Self::Nno),
             b"VR" => Ok(Self::Vr),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1436,30 +1455,27 @@ impl WithDeserializer for ValidWindHourlyDirectionsType {
 }
 #[derive(Debug)]
 pub enum ValidWindIndicesType {
-    String(::std::string::String),
-    BigUint(BigUint),
+    None,
+    Usize(::core::primitive::usize),
 }
 impl DeserializeBytes for ValidWindIndicesType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
     where
-        R: XmlReader,
+        R: DeserializeReader,
     {
-        let mut errors = Vec::new();
-        match ::std::string::String::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::String(value)),
-            Err(error) => errors.push(Box::new(error)),
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::Usize(::core::primitive::usize::deserialize_bytes(
+                reader, x,
+            )?)),
         }
-        match BigUint::deserialize_bytes(reader, bytes) {
-            Ok(value) => return Ok(Self::BigUint(value)),
-            Err(error) => errors.push(Box::new(error)),
-        }
-        Err(reader.map_error(ErrorKind::InvalidUnion(errors.into())))
     }
 }
 #[derive(Debug)]
 pub enum ValidWindRanksType {
     Major,
     Minor,
+    None,
 }
 impl DeserializeBytes for ValidWindRanksType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1469,6 +1485,7 @@ impl DeserializeBytes for ValidWindRanksType {
         match bytes {
             b"major" => Ok(Self::Major),
             b"minor" => Ok(Self::Minor),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1477,6 +1494,7 @@ pub type ValidWindSpeedsType = ValidPressuresType;
 #[derive(Debug)]
 pub enum ValidWindUnitsType {
     KmH,
+    None,
 }
 impl DeserializeBytes for ValidWindUnitsType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1485,6 +1503,7 @@ impl DeserializeBytes for ValidWindUnitsType {
     {
         match bytes {
             b"km/h" => Ok(Self::KmH),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1597,6 +1616,7 @@ pub enum WindDirFullType {
     NordNordOuest,
     VariableDirection,
     DirectionVariable,
+    None,
 }
 impl DeserializeBytes for WindDirFullType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1638,6 +1658,7 @@ impl DeserializeBytes for WindDirFullType {
             b"Nord-nord-ouest" => Ok(Self::NordNordOuest),
             b"Variable direction" => Ok(Self::VariableDirection),
             b"Direction variable" => Ok(Self::DirectionVariable),
+            b"" => Ok(Self::None),
             x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
@@ -1692,7 +1713,6 @@ impl WithDeserializer for WindsType {
 pub type YearType = ::std::string::String;
 pub mod quick_xml_deserialize {
     use core::mem::replace;
-    use num::BigInt;
     use xsd_parser::quick_xml::{
         filter_xmlns_attributes, BytesStart, ContentDeserializer, DeserializeReader, Deserializer,
         DeserializerArtifact, DeserializerEvent, DeserializerOutput, DeserializerResult,
@@ -2553,7 +2573,7 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct CalculatedWindChillTypeDeserializer {
-        index: Option<BigInt>,
+        index: Option<::core::primitive::i32>,
         unit_type: Option<super::ValidUnitTypesType>,
         class: Option<super::ValidWindChillClassType>,
         qa_value: Option<super::QaValueType>,
@@ -2571,7 +2591,7 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            let mut index: Option<BigInt> = None;
+            let mut index: Option<::core::primitive::i32> = None;
             let mut unit_type: Option<super::ValidUnitTypesType> = None;
             let mut class: Option<super::ValidWindChillClassType> = None;
             let mut qa_value: Option<super::QaValueType> = None;
@@ -5046,11 +5066,13 @@ pub mod quick_xml_deserialize {
     #[derive(Debug)]
     pub struct DayTypeDeserializer {
         name: super::ValidDayNamesType,
+        content: Option<::core::primitive::usize>,
         state: Box<DayTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum DayTypeDeserializerState {
         Init__,
+        Content__(<::core::primitive::usize as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl DayTypeDeserializer {
@@ -5070,6 +5092,7 @@ pub mod quick_xml_deserialize {
             Ok(Self {
                 name: name
                     .ok_or_else(|| reader.map_error(ErrorKind::MissingAttribute("name".into())))?,
+                content: None,
                 state: Box::new(DayTypeDeserializerState::Init__),
             })
         }
@@ -5081,7 +5104,56 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
+            if let DayTypeDeserializerState::Content__(deserializer) = state {
+                self.store_content(deserializer.finish(reader)?)?;
+            }
             Ok(())
+        }
+        fn store_content(&mut self, value: ::core::primitive::usize) -> Result<(), Error> {
+            if self.content.is_some() {
+                Err(ErrorKind::DuplicateContent)?;
+            }
+            self.content = Some(value);
+            Ok(())
+        }
+        fn handle_content<'de, R>(
+            mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, ::core::primitive::usize>,
+        ) -> DeserializerResult<'de, super::DayType>
+        where
+            R: DeserializeReader,
+        {
+            use DayTypeDeserializerState as S;
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            match artifact {
+                DeserializerArtifact::None => Ok(DeserializerOutput {
+                    artifact: DeserializerArtifact::None,
+                    event,
+                    allow_any,
+                }),
+                DeserializerArtifact::Data(data) => {
+                    self.store_content(data)?;
+                    let data = self.finish(reader)?;
+                    Ok(DeserializerOutput {
+                        artifact: DeserializerArtifact::Data(data),
+                        event,
+                        allow_any,
+                    })
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    *self.state = S::Content__(deserializer);
+                    Ok(DeserializerOutput {
+                        artifact: DeserializerArtifact::Deserializer(self),
+                        event,
+                        allow_any,
+                    })
+                }
+            }
         }
     }
     impl<'de> Deserializer<'de, super::DayType> for DayTypeDeserializer {
@@ -5089,7 +5161,14 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            reader.init_deserializer_from_start_event(event, Self::from_bytes_start)
+            let (Event::Start(x) | Event::Empty(x)) = &event else {
+                return Ok(DeserializerOutput {
+                    artifact: DeserializerArtifact::None,
+                    event: DeserializerEvent::Break(event),
+                    allow_any: false,
+                });
+            };
+            Self::from_bytes_start(reader, x)?.next(reader, event)
         }
         fn next<R>(
             mut self,
@@ -5099,18 +5178,17 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            if let Event::End(_) = &event {
-                Ok(DeserializerOutput {
-                    artifact: DeserializerArtifact::Data(self.finish(reader)?),
-                    event: DeserializerEvent::None,
-                    allow_any: false,
-                })
-            } else {
-                Ok(DeserializerOutput {
-                    artifact: DeserializerArtifact::Deserializer(self),
-                    event: DeserializerEvent::Break(event),
-                    allow_any: false,
-                })
+            use DayTypeDeserializerState as S;
+            match replace(&mut *self.state, S::Unknown__) {
+                S::Init__ => {
+                    let output = ContentDeserializer::init(reader, event)?;
+                    self.handle_content(reader, output)
+                }
+                S::Content__(deserializer) => {
+                    let output = deserializer.next(reader, event)?;
+                    self.handle_content(reader, output)
+                }
+                S::Unknown__ => unreachable!(),
             }
         }
         fn finish<R>(mut self, reader: &R) -> Result<super::DayType, Error>
@@ -5119,7 +5197,10 @@ pub mod quick_xml_deserialize {
         {
             let state = replace(&mut *self.state, DayTypeDeserializerState::Unknown__);
             self.finish_state(reader, state)?;
-            Ok(super::DayType { name: self.name })
+            Ok(super::DayType {
+                name: self.name,
+                content: self.content.ok_or_else(|| ErrorKind::MissingContent)?,
+            })
         }
     }
     #[derive(Debug)]
@@ -7371,7 +7452,7 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct HourlyForecastTypeFullTypeDeserializer {
-        date_time_utc: Option<BigInt>,
+        date_time_utc: Option<::core::primitive::i32>,
         condition: Option<super::xs::AnyType>,
         icon_code: Option<super::IconCodeHourlyType>,
         temperature: Option<super::TemperatureHourlyType>,
@@ -7401,7 +7482,7 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            let mut date_time_utc: Option<BigInt> = None;
+            let mut date_time_utc: Option<::core::primitive::i32> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
                 if attrib.key.local_name().as_ref() == b"dateTimeUTC" {
@@ -9736,11 +9817,13 @@ pub mod quick_xml_deserialize {
     #[derive(Debug)]
     pub struct MonthTypeDeserializer {
         name: super::ValidMonthNamesType,
+        content: Option<::core::primitive::i32>,
         state: Box<MonthTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum MonthTypeDeserializerState {
         Init__,
+        Content__(<::core::primitive::i32 as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl MonthTypeDeserializer {
@@ -9760,6 +9843,7 @@ pub mod quick_xml_deserialize {
             Ok(Self {
                 name: name
                     .ok_or_else(|| reader.map_error(ErrorKind::MissingAttribute("name".into())))?,
+                content: None,
                 state: Box::new(MonthTypeDeserializerState::Init__),
             })
         }
@@ -9771,7 +9855,56 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
+            if let MonthTypeDeserializerState::Content__(deserializer) = state {
+                self.store_content(deserializer.finish(reader)?)?;
+            }
             Ok(())
+        }
+        fn store_content(&mut self, value: ::core::primitive::i32) -> Result<(), Error> {
+            if self.content.is_some() {
+                Err(ErrorKind::DuplicateContent)?;
+            }
+            self.content = Some(value);
+            Ok(())
+        }
+        fn handle_content<'de, R>(
+            mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, ::core::primitive::i32>,
+        ) -> DeserializerResult<'de, super::MonthType>
+        where
+            R: DeserializeReader,
+        {
+            use MonthTypeDeserializerState as S;
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            match artifact {
+                DeserializerArtifact::None => Ok(DeserializerOutput {
+                    artifact: DeserializerArtifact::None,
+                    event,
+                    allow_any,
+                }),
+                DeserializerArtifact::Data(data) => {
+                    self.store_content(data)?;
+                    let data = self.finish(reader)?;
+                    Ok(DeserializerOutput {
+                        artifact: DeserializerArtifact::Data(data),
+                        event,
+                        allow_any,
+                    })
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    *self.state = S::Content__(deserializer);
+                    Ok(DeserializerOutput {
+                        artifact: DeserializerArtifact::Deserializer(self),
+                        event,
+                        allow_any,
+                    })
+                }
+            }
         }
     }
     impl<'de> Deserializer<'de, super::MonthType> for MonthTypeDeserializer {
@@ -9779,7 +9912,14 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            reader.init_deserializer_from_start_event(event, Self::from_bytes_start)
+            let (Event::Start(x) | Event::Empty(x)) = &event else {
+                return Ok(DeserializerOutput {
+                    artifact: DeserializerArtifact::None,
+                    event: DeserializerEvent::Break(event),
+                    allow_any: false,
+                });
+            };
+            Self::from_bytes_start(reader, x)?.next(reader, event)
         }
         fn next<R>(
             mut self,
@@ -9789,18 +9929,17 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            if let Event::End(_) = &event {
-                Ok(DeserializerOutput {
-                    artifact: DeserializerArtifact::Data(self.finish(reader)?),
-                    event: DeserializerEvent::None,
-                    allow_any: false,
-                })
-            } else {
-                Ok(DeserializerOutput {
-                    artifact: DeserializerArtifact::Deserializer(self),
-                    event: DeserializerEvent::Break(event),
-                    allow_any: false,
-                })
+            use MonthTypeDeserializerState as S;
+            match replace(&mut *self.state, S::Unknown__) {
+                S::Init__ => {
+                    let output = ContentDeserializer::init(reader, event)?;
+                    self.handle_content(reader, output)
+                }
+                S::Content__(deserializer) => {
+                    let output = deserializer.next(reader, event)?;
+                    self.handle_content(reader, output)
+                }
+                S::Unknown__ => unreachable!(),
             }
         }
         fn finish<R>(mut self, reader: &R) -> Result<super::MonthType, Error>
@@ -9809,7 +9948,10 @@ pub mod quick_xml_deserialize {
         {
             let state = replace(&mut *self.state, MonthTypeDeserializerState::Unknown__);
             self.finish_state(reader, state)?;
-            Ok(super::MonthType { name: self.name })
+            Ok(super::MonthType {
+                name: self.name,
+                content: self.content.ok_or_else(|| ErrorKind::MissingContent)?,
+            })
         }
     }
     #[derive(Debug)]
@@ -10407,7 +10549,7 @@ pub mod quick_xml_deserialize {
         unit_type: Option<super::ValidUnitTypesType>,
         class: Option<super::ValidPrecipClassesType>,
         year: Option<::std::string::String>,
-        period: Option<::std::string::String>,
+        period: Option<super::PeriodRangeType>,
         qa_value: Option<super::QaValueType>,
         content: Option<super::ValidPrecipsType>,
         state: Box<PrecipTypeDeserializerState>,
@@ -10427,7 +10569,7 @@ pub mod quick_xml_deserialize {
             let mut unit_type: Option<super::ValidUnitTypesType> = None;
             let mut class: Option<super::ValidPrecipClassesType> = None;
             let mut year: Option<::std::string::String> = None;
-            let mut period: Option<::std::string::String> = None;
+            let mut period: Option<super::PeriodRangeType> = None;
             let mut qa_value: Option<super::QaValueType> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
@@ -14055,8 +14197,8 @@ pub mod quick_xml_deserialize {
     #[derive(Debug)]
     pub struct StationTypeDeserializer {
         code: Option<::std::string::String>,
-        lat: Option<::std::string::String>,
-        lon: Option<::std::string::String>,
+        lat: Option<super::PeriodRangeType>,
+        lon: Option<super::PeriodRangeType>,
         country: Option<super::ValidCountryCodeType>,
         content: Option<::std::string::String>,
         state: Box<StationTypeDeserializerState>,
@@ -14073,8 +14215,8 @@ pub mod quick_xml_deserialize {
             R: DeserializeReader,
         {
             let mut code: Option<::std::string::String> = None;
-            let mut lat: Option<::std::string::String> = None;
-            let mut lon: Option<::std::string::String> = None;
+            let mut lat: Option<super::PeriodRangeType> = None;
+            let mut lon: Option<super::PeriodRangeType> = None;
             let mut country: Option<super::ValidCountryCodeType> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
@@ -14366,7 +14508,7 @@ pub mod quick_xml_deserialize {
         unit_type: Option<super::ValidUnitTypesType>,
         class: Option<super::ValidTemperatureClassesType>,
         year: Option<::std::string::String>,
-        period: Option<::std::string::String>,
+        period: Option<super::PeriodRangeType>,
         qa_value: Option<super::QaValueType>,
         content: Option<super::ValidPressuresType>,
         state: Box<TemperatureTypeDeserializerState>,
@@ -14386,7 +14528,7 @@ pub mod quick_xml_deserialize {
             let mut unit_type: Option<super::ValidUnitTypesType> = None;
             let mut class: Option<super::ValidTemperatureClassesType> = None;
             let mut year: Option<::std::string::String> = None;
-            let mut period: Option<::std::string::String> = None;
+            let mut period: Option<super::PeriodRangeType> = None;
             let mut qa_value: Option<super::QaValueType> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
@@ -19173,7 +19315,6 @@ pub mod quick_xml_deserialize {
     }
 }
 pub mod xs {
-    use num::{BigInt, BigUint};
     use xsd_parser::quick_xml::{DeserializeBytes, DeserializeReader, Error, WithDeserializer};
     #[derive(Debug, Default)]
     pub struct EntitiesType(pub Vec<::std::string::String>);
@@ -19223,14 +19364,14 @@ pub mod xs {
     pub type GYearMonthType = ::std::string::String;
     pub type HexBinaryType = ::std::string::String;
     pub type IntType = ::core::primitive::i32;
-    pub type IntegerType = BigInt;
+    pub type IntegerType = ::core::primitive::i32;
     pub type LanguageType = ::std::string::String;
     pub type LongType = ::core::primitive::i64;
-    pub type NegativeIntegerType = BigInt;
-    pub type NonNegativeIntegerType = BigUint;
-    pub type NonPositiveIntegerType = BigInt;
+    pub type NegativeIntegerType = ::core::primitive::isize;
+    pub type NonNegativeIntegerType = ::core::primitive::usize;
+    pub type NonPositiveIntegerType = ::core::primitive::isize;
     pub type NormalizedStringType = ::std::string::String;
-    pub type PositiveIntegerType = BigUint;
+    pub type PositiveIntegerType = ::core::primitive::usize;
     pub type ShortType = ::core::primitive::i16;
     pub type StringType = ::std::string::String;
     pub type TimeType = ::std::string::String;
