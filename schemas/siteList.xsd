@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified" attributeFormDefault="unqualified"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="siteList">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="site" type="siteType" minOccurs="0" maxOccurs="unbounded" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="siteType">
+        <xs:sequence>
+            <xs:element name="nameEn" type="xs:string" />
+            <xs:element name="nameFr" type="xs:string" />
+            <xs:element name="provinceCode" type="xs:string" />
+        </xs:sequence>
+        <xs:attribute name="code" type="xs:string" />
+    </xs:complexType>
+</xs:schema>
