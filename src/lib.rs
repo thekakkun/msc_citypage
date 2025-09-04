@@ -7,7 +7,7 @@
     clippy::redundant_field_names
 )]
 #[rustfmt::skip]
-mod schema;
+pub mod models;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
@@ -15,27 +15,25 @@ pub fn add(left: u64, right: u64) -> u64 {
 
 #[cfg(test)]
 mod tests {
-    use std::io::BufReader;
+    use std::io::{BufReader, Read};
 
+    use encoding_rs::WINDOWS_1252;
     use xsd_parser::quick_xml::{DeserializeSync, IoReader, XmlReader};
 
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+    use crate::models::generated_schema::SiteList;
 
     #[test]
     fn parse_weather() {
         let input_file =
-            std::fs::File::open("20250830T193948.467Z_MSC_CitypageWeather_s0000024_en.xml")
-                .unwrap();
-        let reader = BufReader::new(input_file);
-        let mut reader = IoReader::new(reader).with_error_info();
-        let mut doc = schema::SiteData::deserialize(&mut reader).unwrap();
+            std::fs::File::open("0250830T193948.467Z_MSC_CitypageWeather_s0000024_en.xml").unwrap();
+        let mut buf = Vec::new();
+        BufReader::new(input_file).read_to_end(&mut buf).unwrap();
 
-        print!("Created structure = {:#?}\n\n", doc);
+        let (cow, _, had_errors) = WINDOWS_1252.decode(&buf);
+        let mut reader = IoReader::new(cow.as_bytes()).with_error_info();
+
+        let doc = SiteList::deserialize(&mut reader).unwrap();
+
+        print!("created structure = {:#?}\n\n", doc);
     }
 }

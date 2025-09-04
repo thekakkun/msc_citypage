@@ -1,3 +1,4 @@
+use crate::models::schemas::XsDateTime;
 use xsd_parser::{
     models::schema::Namespace,
     quick_xml::{
@@ -38,7 +39,7 @@ pub struct CalculatedWindChillType {
     pub unit_type: Option<ValidUnitTypesType>,
     pub class: Option<ValidWindChillClassType>,
     pub qa_value: Option<QaValueType>,
-    pub content: MinuteType,
+    pub content: ValidWindChillsType,
 }
 impl WithDeserializer for CalculatedWindChillType {
     type Deserializer = quick_xml_deserialize::CalculatedWindChillTypeDeserializer;
@@ -146,7 +147,7 @@ pub struct DateStampType {
     pub day: DayType,
     pub hour: HourType,
     pub minute: MinuteType,
-    pub time_stamp: MinuteType,
+    pub time_stamp: XsDateTime,
     pub text_summary: ::std::string::String,
 }
 impl WithDeserializer for DateStampType {
@@ -179,17 +180,23 @@ pub struct ForecastTypeFullType {
     pub temperatures: TemperaturesType,
     pub winds: WindsType,
     pub precipitation: PrecipTypeForecastType,
-    pub snow_level: Option<CloudPrecipType>,
+    pub snow_level: Option<SnowLevelType>,
     pub wind_chill: Option<WindChillType>,
     pub visibility: Option<VisibilityTypeForecastType>,
     pub uv: Option<UvType>,
     pub relative_humidity: Option<RelativeHumidityType>,
-    pub frost: Option<CloudPrecipType>,
+    pub frost: Option<FrostType>,
 }
 impl WithDeserializer for ForecastTypeFullType {
     type Deserializer = quick_xml_deserialize::ForecastTypeFullTypeDeserializer;
 }
-pub type FrostType = CloudPrecipType;
+#[derive(Debug)]
+pub struct FrostType {
+    pub text_summary: ::std::string::String,
+}
+impl WithDeserializer for FrostType {
+    type Deserializer = quick_xml_deserialize::FrostTypeDeserializer;
+}
 #[derive(Debug)]
 pub enum FrostbiteWindChillType {
     RiskOfFrostbite,
@@ -217,7 +224,7 @@ impl DeserializeBytes for FrostbiteWindChillType {
 }
 #[derive(Debug)]
 pub struct HourType {
-    pub content: MinuteType,
+    pub content: ValidHoursType,
 }
 impl WithDeserializer for HourType {
     type Deserializer = quick_xml_deserialize::HourTypeDeserializer;
@@ -272,7 +279,7 @@ impl WithDeserializer for IconCodeHourlyType {
 #[derive(Debug)]
 pub struct IconCodeType {
     pub format: ValidIconCodesUnitsType,
-    pub content: MinuteType,
+    pub content: ValidIconCodesType,
 }
 impl WithDeserializer for IconCodeType {
     type Deserializer = quick_xml_deserialize::IconCodeTypeDeserializer;
@@ -281,9 +288,9 @@ impl WithDeserializer for IconCodeType {
 pub struct LocationType {
     pub continent: ::std::string::String,
     pub country: CountryType,
-    pub province: CountryType,
+    pub province: ProvinceType,
     pub name: NameType,
-    pub region: CountryType,
+    pub region: RegionType,
 }
 impl WithDeserializer for LocationType {
     type Deserializer = quick_xml_deserialize::LocationTypeDeserializer;
@@ -292,7 +299,7 @@ impl WithDeserializer for LocationType {
 pub struct LopHourlyType {
     pub category: Option<CategoryType>,
     pub units: Option<ValidPopUnitsType>,
-    pub content: MinuteType,
+    pub content: ValidPopsType,
 }
 impl WithDeserializer for LopHourlyType {
     type Deserializer = quick_xml_deserialize::LopHourlyTypeDeserializer;
@@ -362,15 +369,15 @@ impl WithDeserializer for PeriodType {
 #[derive(Debug)]
 pub struct PopType {
     pub units: Option<ValidPopUnitsType>,
-    pub content: MinuteType,
+    pub content: ValidPopsType,
 }
 impl WithDeserializer for PopType {
     type Deserializer = quick_xml_deserialize::PopTypeDeserializer;
 }
 #[derive(Debug)]
 pub struct PrecipSubTypeForecastType {
-    pub end: Option<MinuteType>,
-    pub start: Option<MinuteType>,
+    pub end: Option<ValidPrecipSubTypeForecastHoursType>,
+    pub start: Option<ValidPrecipSubTypeForecastHoursType>,
     pub content: ValidPrecipAbbreviatedCodesType,
 }
 impl WithDeserializer for PrecipSubTypeForecastType {
@@ -427,7 +434,14 @@ pub struct PressuresType {
 impl WithDeserializer for PressuresType {
     type Deserializer = quick_xml_deserialize::PressuresTypeDeserializer;
 }
-pub type ProvinceType = CountryType;
+#[derive(Debug)]
+pub struct ProvinceType {
+    pub code: Option<::std::string::String>,
+    pub content: ::std::string::String,
+}
+impl WithDeserializer for ProvinceType {
+    type Deserializer = quick_xml_deserialize::ProvinceTypeDeserializer;
+}
 #[derive(Debug)]
 pub enum QaValueType {
     _10,
@@ -445,7 +459,14 @@ impl DeserializeBytes for QaValueType {
         }
     }
 }
-pub type RegionType = CountryType;
+#[derive(Debug)]
+pub struct RegionType {
+    pub code: Option<::std::string::String>,
+    pub content: ::std::string::String,
+}
+impl WithDeserializer for RegionType {
+    type Deserializer = quick_xml_deserialize::RegionTypeDeserializer;
+}
 #[derive(Debug)]
 pub struct RegionalNormalsType {
     pub text_summary: Option<::std::string::String>,
@@ -456,7 +477,7 @@ impl WithDeserializer for RegionalNormalsType {
 }
 #[derive(Debug)]
 pub struct RelativeHumidityType {
-    pub units: Option<ValidPopUnitsType>,
+    pub units: Option<ValidRelativeHumidityUnitsType>,
     pub qa_value: Option<QaValueType>,
     pub content: ValidRelativeHumiditiesType,
 }
@@ -478,7 +499,24 @@ pub struct RiseSetType {
 impl WithDeserializer for RiseSetType {
     type Deserializer = quick_xml_deserialize::RiseSetTypeDeserializer;
 }
-pub type SecondType = MinuteType;
+#[derive(Debug)]
+pub enum SecondType {
+    None,
+    I32(::core::primitive::i32),
+}
+impl DeserializeBytes for SecondType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 pub type SiteData = SiteDataElementType;
 #[derive(Debug)]
 pub struct SiteDataElementType {
@@ -512,12 +550,18 @@ pub struct SiteType {
 impl WithDeserializer for SiteType {
     type Deserializer = quick_xml_deserialize::SiteTypeDeserializer;
 }
-pub type SnowLevelType = CloudPrecipType;
+#[derive(Debug)]
+pub struct SnowLevelType {
+    pub text_summary: ::std::string::String,
+}
+impl WithDeserializer for SnowLevelType {
+    type Deserializer = quick_xml_deserialize::SnowLevelTypeDeserializer;
+}
 #[derive(Debug)]
 pub struct StationType {
     pub code: Option<::std::string::String>,
-    pub lat: Option<PeriodRangeType>,
-    pub lon: Option<PeriodRangeType>,
+    pub lat: Option<ValidLatLonType>,
+    pub lon: Option<ValidLatLonType>,
     pub country: Option<ValidCountryCodeType>,
     pub content: ::std::string::String,
 }
@@ -528,7 +572,7 @@ impl WithDeserializer for StationType {
 pub struct TemperatureHourlyType {
     pub units: Option<ValidTemperatureUnitsType>,
     pub unit_type: Option<ValidUnitTypesType>,
-    pub content: ValidPressuresType,
+    pub content: ValidTemperaturesType,
 }
 impl WithDeserializer for TemperatureHourlyType {
     type Deserializer = quick_xml_deserialize::TemperatureHourlyTypeDeserializer;
@@ -541,7 +585,7 @@ pub struct TemperatureType {
     pub year: Option<::std::string::String>,
     pub period: Option<PeriodRangeType>,
     pub qa_value: Option<QaValueType>,
-    pub content: ValidPressuresType,
+    pub content: ValidTemperaturesType,
 }
 impl WithDeserializer for TemperatureType {
     type Deserializer = quick_xml_deserialize::TemperatureTypeDeserializer;
@@ -555,14 +599,13 @@ impl WithDeserializer for TemperaturesType {
     type Deserializer = quick_xml_deserialize::TemperaturesTypeDeserializer;
 }
 pub type TextSummaryType = ::std::string::String;
-pub type TimeStampType = MinuteType;
 #[derive(Debug)]
 pub struct TimeType {
     pub name: Option<::std::string::String>,
     pub zone: Option<ValidTimeZonesType>,
     pub hour: HourType,
     pub minute: MinuteType,
-    pub second: Option<MinuteType>,
+    pub second: Option<SecondType>,
 }
 impl WithDeserializer for TimeType {
     type Deserializer = quick_xml_deserialize::TimeTypeDeserializer;
@@ -619,16 +662,33 @@ impl DeserializeBytes for UvCategoryType {
 }
 #[derive(Debug)]
 pub struct UvHourlyType {
-    pub index: MinuteType,
+    pub index: UvIndexType,
 }
 impl WithDeserializer for UvHourlyType {
     type Deserializer = quick_xml_deserialize::UvHourlyTypeDeserializer;
 }
-pub type UvIndexType = MinuteType;
+#[derive(Debug)]
+pub enum UvIndexType {
+    None,
+    I32(::core::primitive::i32),
+}
+impl DeserializeBytes for UvIndexType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub struct UvType {
     pub category: Option<UvCategoryType>,
-    pub index: MinuteType,
+    pub index: UvIndexType,
     pub text_summary: ::std::string::String,
 }
 impl WithDeserializer for UvType {
@@ -807,7 +867,24 @@ impl DeserializeBytes for ValidFormatType {
         }
     }
 }
-pub type ValidHoursType = MinuteType;
+#[derive(Debug)]
+pub enum ValidHoursType {
+    None,
+    I32(::core::primitive::i32),
+}
+impl DeserializeBytes for ValidHoursType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidHumidexType {
     None,
@@ -827,7 +904,24 @@ impl DeserializeBytes for ValidHumidexType {
         }
     }
 }
-pub type ValidIconCodesType = MinuteType;
+#[derive(Debug)]
+pub enum ValidIconCodesType {
+    None,
+    I32(::core::primitive::i32),
+}
+impl DeserializeBytes for ValidIconCodesType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidIconCodesUnitsType {
     Gif,
@@ -844,7 +938,24 @@ impl DeserializeBytes for ValidIconCodesUnitsType {
     }
 }
 pub type ValidIndexTypesType = ::core::primitive::i32;
-pub type ValidLatLonType = PeriodRangeType;
+#[derive(Debug)]
+pub enum ValidLatLonType {
+    String(::std::string::String),
+    None,
+}
+impl DeserializeBytes for ValidLatLonType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::String(::std::string::String::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 pub type ValidLocationCodeType = ::std::string::String;
 pub type ValidLocationLatLonType = ::std::string::String;
 #[derive(Debug)]
@@ -926,7 +1037,24 @@ impl DeserializeBytes for ValidPopUnitsType {
         }
     }
 }
-pub type ValidPopsType = MinuteType;
+#[derive(Debug)]
+pub enum ValidPopsType {
+    None,
+    I32(::core::primitive::i32),
+}
+impl DeserializeBytes for ValidPopsType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidPrecipAbbreviatedCodesType {
     Rain,
@@ -1003,7 +1131,24 @@ impl DeserializeBytes for ValidPrecipClassesType {
         }
     }
 }
-pub type ValidPrecipSubTypeForecastHoursType = MinuteType;
+#[derive(Debug)]
+pub enum ValidPrecipSubTypeForecastHoursType {
+    None,
+    I32(::core::primitive::i32),
+}
+impl DeserializeBytes for ValidPrecipSubTypeForecastHoursType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidPrecipUnitsType {
     Mm,
@@ -1124,7 +1269,23 @@ impl DeserializeBytes for ValidRelativeHumiditiesType {
         }
     }
 }
-pub type ValidRelativeHumidityUnitsType = ValidPopUnitsType;
+#[derive(Debug)]
+pub enum ValidRelativeHumidityUnitsType {
+    Percent,
+    None,
+}
+impl DeserializeBytes for ValidRelativeHumidityUnitsType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"%" => Ok(Self::Percent),
+            b"" => Ok(Self::None),
+            x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
+        }
+    }
+}
 pub type ValidStationCodeType = ::std::string::String;
 #[derive(Debug)]
 pub enum ValidTemperatureClassesType {
@@ -1180,7 +1341,24 @@ impl DeserializeBytes for ValidTemperatureUnitsType {
         }
     }
 }
-pub type ValidTemperaturesType = ValidPressuresType;
+#[derive(Debug)]
+pub enum ValidTemperaturesType {
+    None,
+    F64(::core::primitive::f64),
+}
+impl DeserializeBytes for ValidTemperaturesType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::F64(::core::primitive::f64::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidTimeZonesType {
     Adt,
@@ -1264,7 +1442,24 @@ impl DeserializeBytes for ValidUnitTypesType {
         }
     }
 }
-pub type ValidVisibilitiesType = ValidPressuresType;
+#[derive(Debug)]
+pub enum ValidVisibilitiesType {
+    None,
+    F64(::core::primitive::f64),
+}
+impl DeserializeBytes for ValidVisibilitiesType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::F64(::core::primitive::f64::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidVisibilityUnitsType {
     Km,
@@ -1344,7 +1539,24 @@ impl DeserializeBytes for ValidWindBearingUnitsType {
         }
     }
 }
-pub type ValidWindBearingsType = MinuteType;
+#[derive(Debug)]
+pub enum ValidWindBearingsType {
+    None,
+    I32(::core::primitive::i32),
+}
+impl DeserializeBytes for ValidWindBearingsType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidWindChillClassType {
     Morning,
@@ -1380,7 +1592,24 @@ impl DeserializeBytes for ValidWindChillClassType {
         }
     }
 }
-pub type ValidWindChillsType = MinuteType;
+#[derive(Debug)]
+pub enum ValidWindChillsType {
+    None,
+    I32(::core::primitive::i32),
+}
+impl DeserializeBytes for ValidWindChillsType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidWindDirectionsType {
     N,
@@ -1490,7 +1719,24 @@ impl DeserializeBytes for ValidWindRanksType {
         }
     }
 }
-pub type ValidWindSpeedsType = ValidPressuresType;
+#[derive(Debug)]
+pub enum ValidWindSpeedsType {
+    None,
+    F64(::core::primitive::f64),
+}
+impl DeserializeBytes for ValidWindSpeedsType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"" => Ok(Self::None),
+            x => Ok(Self::F64(::core::primitive::f64::deserialize_bytes(
+                reader, x,
+            )?)),
+        }
+    }
+}
 #[derive(Debug)]
 pub enum ValidWindUnitsType {
     KmH,
@@ -1521,7 +1767,7 @@ pub struct VisibilityTypeCondType {
     pub units: Option<ValidVisibilityUnitsType>,
     pub unit_type: Option<ValidUnitTypesType>,
     pub qa_value: Option<QaValueType>,
-    pub content: ValidPressuresType,
+    pub content: ValidVisibilitiesType,
 }
 impl WithDeserializer for VisibilityTypeCondType {
     type Deserializer = quick_xml_deserialize::VisibilityTypeCondTypeDeserializer;
@@ -1539,7 +1785,7 @@ pub struct WarningEventType {
     pub type_: Option<ValidWarningTypesType>,
     pub description: Option<::std::string::String>,
     pub priority: Option<ValidWarningPrioritiesType>,
-    pub expiry_time: Option<MinuteType>,
+    pub expiry_time: Option<XsDateTime>,
     pub url: Option<::std::string::String>,
     pub date_time: [DateStampType; 2usize],
 }
@@ -1558,7 +1804,7 @@ impl WithDeserializer for WarningsType {
 pub struct WindBearingType {
     pub units: Option<ValidWindBearingUnitsType>,
     pub qa_value: Option<QaValueType>,
-    pub content: MinuteType,
+    pub content: ValidWindBearingsType,
 }
 impl WithDeserializer for WindBearingType {
     type Deserializer = quick_xml_deserialize::WindBearingTypeDeserializer;
@@ -1566,7 +1812,7 @@ impl WithDeserializer for WindBearingType {
 #[derive(Debug)]
 pub struct WindChillHourlyType {
     pub unit_type: Option<ValidUnitTypesType>,
-    pub content: MinuteType,
+    pub content: ValidWindChillsType,
 }
 impl WithDeserializer for WindChillHourlyType {
     type Deserializer = quick_xml_deserialize::WindChillHourlyTypeDeserializer;
@@ -1685,7 +1931,7 @@ pub struct WindSpeedType {
     pub units: Option<ValidWindUnitsType>,
     pub unit_type: Option<ValidUnitTypesType>,
     pub qa_value: Option<QaValueType>,
-    pub content: ValidPressuresType,
+    pub content: ValidWindSpeedsType,
 }
 impl WithDeserializer for WindSpeedType {
     type Deserializer = quick_xml_deserialize::WindSpeedTypeDeserializer;
@@ -1712,6 +1958,7 @@ impl WithDeserializer for WindsType {
 }
 pub type YearType = ::std::string::String;
 pub mod quick_xml_deserialize {
+    use crate::models::schemas::XsDateTime;
     use core::mem::replace;
     use xsd_parser::quick_xml::{
         filter_xmlns_attributes, BytesStart, ContentDeserializer, DeserializeReader, Deserializer,
@@ -2577,13 +2824,13 @@ pub mod quick_xml_deserialize {
         unit_type: Option<super::ValidUnitTypesType>,
         class: Option<super::ValidWindChillClassType>,
         qa_value: Option<super::QaValueType>,
-        content: Option<super::MinuteType>,
+        content: Option<super::ValidWindChillsType>,
         state: Box<CalculatedWindChillTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum CalculatedWindChillTypeDeserializerState {
         Init__,
-        Content__(<super::MinuteType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidWindChillsType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl CalculatedWindChillTypeDeserializer {
@@ -2631,7 +2878,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidWindChillsType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -2641,7 +2888,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::ValidWindChillsType>,
         ) -> DeserializerResult<'de, super::CalculatedWindChillType>
         where
             R: DeserializeReader,
@@ -4299,7 +4546,7 @@ pub mod quick_xml_deserialize {
         day: Option<super::DayType>,
         hour: Option<super::HourType>,
         minute: Option<super::MinuteType>,
-        time_stamp: Option<super::MinuteType>,
+        time_stamp: Option<XsDateTime>,
         text_summary: Option<::std::string::String>,
         state: Box<DateStampTypeDeserializerState>,
     }
@@ -4311,7 +4558,7 @@ pub mod quick_xml_deserialize {
         Day(Option<<super::DayType as WithDeserializer>::Deserializer>),
         Hour(Option<<super::HourType as WithDeserializer>::Deserializer>),
         Minute(Option<<super::MinuteType as WithDeserializer>::Deserializer>),
-        TimeStamp(Option<<super::MinuteType as WithDeserializer>::Deserializer>),
+        TimeStamp(Option<<XsDateTime as WithDeserializer>::Deserializer>),
         TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
         Done__,
         Unknown__,
@@ -4414,7 +4661,7 @@ pub mod quick_xml_deserialize {
             self.minute = Some(value);
             Ok(())
         }
-        fn store_time_stamp(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_time_stamp(&mut self, value: XsDateTime) -> Result<(), Error> {
             if self.time_stamp.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"timeStamp",
@@ -4691,7 +4938,7 @@ pub mod quick_xml_deserialize {
         fn handle_time_stamp<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, XsDateTime>,
             fallback: &mut Option<DateStampTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -5636,12 +5883,12 @@ pub mod quick_xml_deserialize {
         temperatures: Option<super::TemperaturesType>,
         winds: Option<super::WindsType>,
         precipitation: Option<super::PrecipTypeForecastType>,
-        snow_level: Option<super::CloudPrecipType>,
+        snow_level: Option<super::SnowLevelType>,
         wind_chill: Option<super::WindChillType>,
         visibility: Option<super::VisibilityTypeForecastType>,
         uv: Option<super::UvType>,
         relative_humidity: Option<super::RelativeHumidityType>,
-        frost: Option<super::CloudPrecipType>,
+        frost: Option<super::FrostType>,
         state: Box<ForecastTypeFullTypeDeserializerState>,
     }
     #[derive(Debug)]
@@ -5656,12 +5903,12 @@ pub mod quick_xml_deserialize {
         Temperatures(Option<<super::TemperaturesType as WithDeserializer>::Deserializer>),
         Winds(Option<<super::WindsType as WithDeserializer>::Deserializer>),
         Precipitation(Option<<super::PrecipTypeForecastType as WithDeserializer>::Deserializer>),
-        SnowLevel(Option<<super::CloudPrecipType as WithDeserializer>::Deserializer>),
+        SnowLevel(Option<<super::SnowLevelType as WithDeserializer>::Deserializer>),
         WindChill(Option<<super::WindChillType as WithDeserializer>::Deserializer>),
         Visibility(Option<<super::VisibilityTypeForecastType as WithDeserializer>::Deserializer>),
         Uv(Option<<super::UvType as WithDeserializer>::Deserializer>),
         RelativeHumidity(Option<<super::RelativeHumidityType as WithDeserializer>::Deserializer>),
-        Frost(Option<<super::CloudPrecipType as WithDeserializer>::Deserializer>),
+        Frost(Option<<super::FrostType as WithDeserializer>::Deserializer>),
         Done__,
         Unknown__,
     }
@@ -5805,7 +6052,7 @@ pub mod quick_xml_deserialize {
             self.precipitation = Some(value);
             Ok(())
         }
-        fn store_snow_level(&mut self, value: super::CloudPrecipType) -> Result<(), Error> {
+        fn store_snow_level(&mut self, value: super::SnowLevelType) -> Result<(), Error> {
             if self.snow_level.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"snowLevel",
@@ -5854,7 +6101,7 @@ pub mod quick_xml_deserialize {
             self.relative_humidity = Some(value);
             Ok(())
         }
-        fn store_frost(&mut self, value: super::CloudPrecipType) -> Result<(), Error> {
+        fn store_frost(&mut self, value: super::FrostType) -> Result<(), Error> {
             if self.frost.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"frost",
@@ -6254,7 +6501,7 @@ pub mod quick_xml_deserialize {
         fn handle_snow_level<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::CloudPrecipType>,
+            output: DeserializerOutput<'de, super::SnowLevelType>,
             fallback: &mut Option<ForecastTypeFullTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -6504,7 +6751,7 @@ pub mod quick_xml_deserialize {
         fn handle_frost<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::CloudPrecipType>,
+            output: DeserializerOutput<'de, super::FrostType>,
             fallback: &mut Option<ForecastTypeFullTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -7003,14 +7250,218 @@ pub mod quick_xml_deserialize {
         }
     }
     #[derive(Debug)]
+    pub struct FrostTypeDeserializer {
+        text_summary: Option<::std::string::String>,
+        state: Box<FrostTypeDeserializerState>,
+    }
+    #[derive(Debug)]
+    enum FrostTypeDeserializerState {
+        Init__,
+        TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
+        Done__,
+        Unknown__,
+    }
+    impl FrostTypeDeserializer {
+        fn from_bytes_start<R>(reader: &R, bytes_start: &BytesStart<'_>) -> Result<Self, Error>
+        where
+            R: DeserializeReader,
+        {
+            for attrib in filter_xmlns_attributes(bytes_start) {
+                let attrib = attrib?;
+                reader.raise_unexpected_attrib_checked(attrib)?;
+            }
+            Ok(Self {
+                text_summary: None,
+                state: Box::new(FrostTypeDeserializerState::Init__),
+            })
+        }
+        fn finish_state<R>(
+            &mut self,
+            reader: &R,
+            state: FrostTypeDeserializerState,
+        ) -> Result<(), Error>
+        where
+            R: DeserializeReader,
+        {
+            use FrostTypeDeserializerState as S;
+            match state {
+                S::TextSummary(Some(deserializer)) => {
+                    self.store_text_summary(deserializer.finish(reader)?)?
+                }
+                _ => (),
+            }
+            Ok(())
+        }
+        fn store_text_summary(&mut self, value: ::std::string::String) -> Result<(), Error> {
+            if self.text_summary.is_some() {
+                Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
+                    b"textSummary",
+                )))?;
+            }
+            self.text_summary = Some(value);
+            Ok(())
+        }
+        fn handle_text_summary<'de, R>(
+            &mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, ::std::string::String>,
+            fallback: &mut Option<FrostTypeDeserializerState>,
+        ) -> Result<ElementHandlerOutput<'de>, Error>
+        where
+            R: DeserializeReader,
+        {
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            if artifact.is_none() {
+                if self.text_summary.is_some() {
+                    fallback.get_or_insert(FrostTypeDeserializerState::TextSummary(None));
+                    *self.state = FrostTypeDeserializerState::Done__;
+                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                } else {
+                    *self.state = FrostTypeDeserializerState::TextSummary(None);
+                    return Ok(ElementHandlerOutput::break_(event, allow_any));
+                }
+            }
+            if let Some(fallback) = fallback.take() {
+                self.finish_state(reader, fallback)?;
+            }
+            Ok(match artifact {
+                DeserializerArtifact::None => unreachable!(),
+                DeserializerArtifact::Data(data) => {
+                    self.store_text_summary(data)?;
+                    *self.state = FrostTypeDeserializerState::Done__;
+                    ElementHandlerOutput::from_event(event, allow_any)
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    let ret = ElementHandlerOutput::from_event(event, allow_any);
+                    match &ret {
+                        ElementHandlerOutput::Continue { .. } => {
+                            fallback.get_or_insert(FrostTypeDeserializerState::TextSummary(Some(
+                                deserializer,
+                            )));
+                            *self.state = FrostTypeDeserializerState::Done__;
+                        }
+                        ElementHandlerOutput::Break { .. } => {
+                            *self.state =
+                                FrostTypeDeserializerState::TextSummary(Some(deserializer));
+                        }
+                    }
+                    ret
+                }
+            })
+        }
+    }
+    impl<'de> Deserializer<'de, super::FrostType> for FrostTypeDeserializer {
+        fn init<R>(reader: &R, event: Event<'de>) -> DeserializerResult<'de, super::FrostType>
+        where
+            R: DeserializeReader,
+        {
+            reader.init_deserializer_from_start_event(event, Self::from_bytes_start)
+        }
+        fn next<R>(
+            mut self,
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::FrostType>
+        where
+            R: DeserializeReader,
+        {
+            use FrostTypeDeserializerState as S;
+            let mut event = event;
+            let mut fallback = None;
+            let mut allow_any_element = false;
+            let (event, allow_any) = loop {
+                let state = replace(&mut *self.state, S::Unknown__);
+                event = match (state, event) {
+                    (S::TextSummary(Some(deserializer)), event) => {
+                        let output = deserializer.next(reader, event)?;
+                        match self.handle_text_summary(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Continue { event, allow_any } => {
+                                allow_any_element = allow_any_element || allow_any;
+                                event
+                            }
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                        }
+                    }
+                    (_, Event::End(_)) => {
+                        if let Some(fallback) = fallback.take() {
+                            self.finish_state(reader, fallback)?;
+                        }
+                        return Ok(DeserializerOutput {
+                            artifact: DeserializerArtifact::Data(self.finish(reader)?),
+                            event: DeserializerEvent::None,
+                            allow_any: false,
+                        });
+                    }
+                    (S::Init__, event) => {
+                        fallback.get_or_insert(S::Init__);
+                        *self.state = FrostTypeDeserializerState::TextSummary(None);
+                        event
+                    }
+                    (S::TextSummary(None), event @ (Event::Start(_) | Event::Empty(_))) => {
+                        let output = reader.init_start_tag_deserializer(
+                            event,
+                            None,
+                            b"textSummary",
+                            false,
+                        )?;
+                        match self.handle_text_summary(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Continue { event, allow_any } => {
+                                allow_any_element = allow_any_element || allow_any;
+                                event
+                            }
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                        }
+                    }
+                    (S::Done__, event) => {
+                        fallback.get_or_insert(S::Done__);
+                        break (DeserializerEvent::Continue(event), allow_any_element);
+                    }
+                    (S::Unknown__, _) => unreachable!(),
+                    (state, event) => {
+                        *self.state = state;
+                        break (DeserializerEvent::Break(event), false);
+                    }
+                }
+            };
+            if let Some(fallback) = fallback {
+                *self.state = fallback;
+            }
+            Ok(DeserializerOutput {
+                artifact: DeserializerArtifact::Deserializer(self),
+                event,
+                allow_any,
+            })
+        }
+        fn finish<R>(mut self, reader: &R) -> Result<super::FrostType, Error>
+        where
+            R: DeserializeReader,
+        {
+            let state = replace(&mut *self.state, FrostTypeDeserializerState::Unknown__);
+            self.finish_state(reader, state)?;
+            Ok(super::FrostType {
+                text_summary: self
+                    .text_summary
+                    .ok_or_else(|| ErrorKind::MissingElement("textSummary".into()))?,
+            })
+        }
+    }
+    #[derive(Debug)]
     pub struct HourTypeDeserializer {
-        content: Option<super::MinuteType>,
+        content: Option<super::ValidHoursType>,
         state: Box<HourTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum HourTypeDeserializerState {
         Init__,
-        Content__(<super::MinuteType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidHoursType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl HourTypeDeserializer {
@@ -7040,7 +7491,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidHoursType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -7050,7 +7501,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::ValidHoursType>,
         ) -> DeserializerResult<'de, super::HourType>
         where
             R: DeserializeReader,
@@ -8959,13 +9410,13 @@ pub mod quick_xml_deserialize {
     #[derive(Debug)]
     pub struct IconCodeTypeDeserializer {
         format: super::ValidIconCodesUnitsType,
-        content: Option<super::MinuteType>,
+        content: Option<super::ValidIconCodesType>,
         state: Box<IconCodeTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum IconCodeTypeDeserializerState {
         Init__,
-        Content__(<super::MinuteType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidIconCodesType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl IconCodeTypeDeserializer {
@@ -9003,7 +9454,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidIconCodesType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -9013,7 +9464,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::ValidIconCodesType>,
         ) -> DeserializerResult<'de, super::IconCodeType>
         where
             R: DeserializeReader,
@@ -9101,9 +9552,9 @@ pub mod quick_xml_deserialize {
     pub struct LocationTypeDeserializer {
         continent: Option<::std::string::String>,
         country: Option<super::CountryType>,
-        province: Option<super::CountryType>,
+        province: Option<super::ProvinceType>,
         name: Option<super::NameType>,
-        region: Option<super::CountryType>,
+        region: Option<super::RegionType>,
         state: Box<LocationTypeDeserializerState>,
     }
     #[derive(Debug)]
@@ -9111,9 +9562,9 @@ pub mod quick_xml_deserialize {
         Init__,
         Continent(Option<<::std::string::String as WithDeserializer>::Deserializer>),
         Country(Option<<super::CountryType as WithDeserializer>::Deserializer>),
-        Province(Option<<super::CountryType as WithDeserializer>::Deserializer>),
+        Province(Option<<super::ProvinceType as WithDeserializer>::Deserializer>),
         Name(Option<<super::NameType as WithDeserializer>::Deserializer>),
-        Region(Option<<super::CountryType as WithDeserializer>::Deserializer>),
+        Region(Option<<super::RegionType as WithDeserializer>::Deserializer>),
         Done__,
         Unknown__,
     }
@@ -9178,7 +9629,7 @@ pub mod quick_xml_deserialize {
             self.country = Some(value);
             Ok(())
         }
-        fn store_province(&mut self, value: super::CountryType) -> Result<(), Error> {
+        fn store_province(&mut self, value: super::ProvinceType) -> Result<(), Error> {
             if self.province.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"province",
@@ -9194,7 +9645,7 @@ pub mod quick_xml_deserialize {
             self.name = Some(value);
             Ok(())
         }
-        fn store_region(&mut self, value: super::CountryType) -> Result<(), Error> {
+        fn store_region(&mut self, value: super::RegionType) -> Result<(), Error> {
             if self.region.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"region",
@@ -9310,7 +9761,7 @@ pub mod quick_xml_deserialize {
         fn handle_province<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::CountryType>,
+            output: DeserializerOutput<'de, super::ProvinceType>,
             fallback: &mut Option<LocationTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -9413,7 +9864,7 @@ pub mod quick_xml_deserialize {
         fn handle_region<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::CountryType>,
+            output: DeserializerOutput<'de, super::RegionType>,
             fallback: &mut Option<LocationTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -9673,13 +10124,13 @@ pub mod quick_xml_deserialize {
     pub struct LopHourlyTypeDeserializer {
         category: Option<super::CategoryType>,
         units: Option<super::ValidPopUnitsType>,
-        content: Option<super::MinuteType>,
+        content: Option<super::ValidPopsType>,
         state: Box<LopHourlyTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum LopHourlyTypeDeserializerState {
         Init__,
-        Content__(<super::MinuteType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidPopsType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl LopHourlyTypeDeserializer {
@@ -9719,7 +10170,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidPopsType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -9729,7 +10180,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::ValidPopsType>,
         ) -> DeserializerResult<'de, super::LopHourlyType>
         where
             R: DeserializeReader,
@@ -10251,13 +10702,13 @@ pub mod quick_xml_deserialize {
     #[derive(Debug)]
     pub struct PopTypeDeserializer {
         units: Option<super::ValidPopUnitsType>,
-        content: Option<super::MinuteType>,
+        content: Option<super::ValidPopsType>,
         state: Box<PopTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum PopTypeDeserializerState {
         Init__,
-        Content__(<super::MinuteType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidPopsType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl PopTypeDeserializer {
@@ -10293,7 +10744,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidPopsType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -10303,7 +10754,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::ValidPopsType>,
         ) -> DeserializerResult<'de, super::PopType>
         where
             R: DeserializeReader,
@@ -10389,8 +10840,8 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct PrecipSubTypeForecastTypeDeserializer {
-        end: Option<super::MinuteType>,
-        start: Option<super::MinuteType>,
+        end: Option<super::ValidPrecipSubTypeForecastHoursType>,
+        start: Option<super::ValidPrecipSubTypeForecastHoursType>,
         content: Option<super::ValidPrecipAbbreviatedCodesType>,
         state: Box<PrecipSubTypeForecastTypeDeserializerState>,
     }
@@ -10405,8 +10856,8 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            let mut end: Option<super::MinuteType> = None;
-            let mut start: Option<super::MinuteType> = None;
+            let mut end: Option<super::ValidPrecipSubTypeForecastHoursType> = None;
+            let mut start: Option<super::ValidPrecipSubTypeForecastHoursType> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
                 if attrib.key.local_name().as_ref() == b"end" {
@@ -11748,6 +12199,284 @@ pub mod quick_xml_deserialize {
         }
     }
     #[derive(Debug)]
+    pub struct ProvinceTypeDeserializer {
+        code: Option<::std::string::String>,
+        content: Option<::std::string::String>,
+        state: Box<ProvinceTypeDeserializerState>,
+    }
+    #[derive(Debug)]
+    enum ProvinceTypeDeserializerState {
+        Init__,
+        Content__(<::std::string::String as WithDeserializer>::Deserializer),
+        Unknown__,
+    }
+    impl ProvinceTypeDeserializer {
+        fn from_bytes_start<R>(reader: &R, bytes_start: &BytesStart<'_>) -> Result<Self, Error>
+        where
+            R: DeserializeReader,
+        {
+            let mut code: Option<::std::string::String> = None;
+            for attrib in filter_xmlns_attributes(bytes_start) {
+                let attrib = attrib?;
+                if attrib.key.local_name().as_ref() == b"code" {
+                    reader.read_attrib(&mut code, b"code", &attrib.value)?;
+                } else {
+                    reader.raise_unexpected_attrib_checked(attrib)?;
+                }
+            }
+            Ok(Self {
+                code: code,
+                content: None,
+                state: Box::new(ProvinceTypeDeserializerState::Init__),
+            })
+        }
+        fn finish_state<R>(
+            &mut self,
+            reader: &R,
+            state: ProvinceTypeDeserializerState,
+        ) -> Result<(), Error>
+        where
+            R: DeserializeReader,
+        {
+            if let ProvinceTypeDeserializerState::Content__(deserializer) = state {
+                self.store_content(deserializer.finish(reader)?)?;
+            }
+            Ok(())
+        }
+        fn store_content(&mut self, value: ::std::string::String) -> Result<(), Error> {
+            if self.content.is_some() {
+                Err(ErrorKind::DuplicateContent)?;
+            }
+            self.content = Some(value);
+            Ok(())
+        }
+        fn handle_content<'de, R>(
+            mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, ::std::string::String>,
+        ) -> DeserializerResult<'de, super::ProvinceType>
+        where
+            R: DeserializeReader,
+        {
+            use ProvinceTypeDeserializerState as S;
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            match artifact {
+                DeserializerArtifact::None => Ok(DeserializerOutput {
+                    artifact: DeserializerArtifact::None,
+                    event,
+                    allow_any,
+                }),
+                DeserializerArtifact::Data(data) => {
+                    self.store_content(data)?;
+                    let data = self.finish(reader)?;
+                    Ok(DeserializerOutput {
+                        artifact: DeserializerArtifact::Data(data),
+                        event,
+                        allow_any,
+                    })
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    *self.state = S::Content__(deserializer);
+                    Ok(DeserializerOutput {
+                        artifact: DeserializerArtifact::Deserializer(self),
+                        event,
+                        allow_any,
+                    })
+                }
+            }
+        }
+    }
+    impl<'de> Deserializer<'de, super::ProvinceType> for ProvinceTypeDeserializer {
+        fn init<R>(reader: &R, event: Event<'de>) -> DeserializerResult<'de, super::ProvinceType>
+        where
+            R: DeserializeReader,
+        {
+            let (Event::Start(x) | Event::Empty(x)) = &event else {
+                return Ok(DeserializerOutput {
+                    artifact: DeserializerArtifact::None,
+                    event: DeserializerEvent::Break(event),
+                    allow_any: false,
+                });
+            };
+            Self::from_bytes_start(reader, x)?.next(reader, event)
+        }
+        fn next<R>(
+            mut self,
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::ProvinceType>
+        where
+            R: DeserializeReader,
+        {
+            use ProvinceTypeDeserializerState as S;
+            match replace(&mut *self.state, S::Unknown__) {
+                S::Init__ => {
+                    let output = ContentDeserializer::init(reader, event)?;
+                    self.handle_content(reader, output)
+                }
+                S::Content__(deserializer) => {
+                    let output = deserializer.next(reader, event)?;
+                    self.handle_content(reader, output)
+                }
+                S::Unknown__ => unreachable!(),
+            }
+        }
+        fn finish<R>(mut self, reader: &R) -> Result<super::ProvinceType, Error>
+        where
+            R: DeserializeReader,
+        {
+            let state = replace(&mut *self.state, ProvinceTypeDeserializerState::Unknown__);
+            self.finish_state(reader, state)?;
+            Ok(super::ProvinceType {
+                code: self.code,
+                content: self.content.ok_or_else(|| ErrorKind::MissingContent)?,
+            })
+        }
+    }
+    #[derive(Debug)]
+    pub struct RegionTypeDeserializer {
+        code: Option<::std::string::String>,
+        content: Option<::std::string::String>,
+        state: Box<RegionTypeDeserializerState>,
+    }
+    #[derive(Debug)]
+    enum RegionTypeDeserializerState {
+        Init__,
+        Content__(<::std::string::String as WithDeserializer>::Deserializer),
+        Unknown__,
+    }
+    impl RegionTypeDeserializer {
+        fn from_bytes_start<R>(reader: &R, bytes_start: &BytesStart<'_>) -> Result<Self, Error>
+        where
+            R: DeserializeReader,
+        {
+            let mut code: Option<::std::string::String> = None;
+            for attrib in filter_xmlns_attributes(bytes_start) {
+                let attrib = attrib?;
+                if attrib.key.local_name().as_ref() == b"code" {
+                    reader.read_attrib(&mut code, b"code", &attrib.value)?;
+                } else {
+                    reader.raise_unexpected_attrib_checked(attrib)?;
+                }
+            }
+            Ok(Self {
+                code: code,
+                content: None,
+                state: Box::new(RegionTypeDeserializerState::Init__),
+            })
+        }
+        fn finish_state<R>(
+            &mut self,
+            reader: &R,
+            state: RegionTypeDeserializerState,
+        ) -> Result<(), Error>
+        where
+            R: DeserializeReader,
+        {
+            if let RegionTypeDeserializerState::Content__(deserializer) = state {
+                self.store_content(deserializer.finish(reader)?)?;
+            }
+            Ok(())
+        }
+        fn store_content(&mut self, value: ::std::string::String) -> Result<(), Error> {
+            if self.content.is_some() {
+                Err(ErrorKind::DuplicateContent)?;
+            }
+            self.content = Some(value);
+            Ok(())
+        }
+        fn handle_content<'de, R>(
+            mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, ::std::string::String>,
+        ) -> DeserializerResult<'de, super::RegionType>
+        where
+            R: DeserializeReader,
+        {
+            use RegionTypeDeserializerState as S;
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            match artifact {
+                DeserializerArtifact::None => Ok(DeserializerOutput {
+                    artifact: DeserializerArtifact::None,
+                    event,
+                    allow_any,
+                }),
+                DeserializerArtifact::Data(data) => {
+                    self.store_content(data)?;
+                    let data = self.finish(reader)?;
+                    Ok(DeserializerOutput {
+                        artifact: DeserializerArtifact::Data(data),
+                        event,
+                        allow_any,
+                    })
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    *self.state = S::Content__(deserializer);
+                    Ok(DeserializerOutput {
+                        artifact: DeserializerArtifact::Deserializer(self),
+                        event,
+                        allow_any,
+                    })
+                }
+            }
+        }
+    }
+    impl<'de> Deserializer<'de, super::RegionType> for RegionTypeDeserializer {
+        fn init<R>(reader: &R, event: Event<'de>) -> DeserializerResult<'de, super::RegionType>
+        where
+            R: DeserializeReader,
+        {
+            let (Event::Start(x) | Event::Empty(x)) = &event else {
+                return Ok(DeserializerOutput {
+                    artifact: DeserializerArtifact::None,
+                    event: DeserializerEvent::Break(event),
+                    allow_any: false,
+                });
+            };
+            Self::from_bytes_start(reader, x)?.next(reader, event)
+        }
+        fn next<R>(
+            mut self,
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::RegionType>
+        where
+            R: DeserializeReader,
+        {
+            use RegionTypeDeserializerState as S;
+            match replace(&mut *self.state, S::Unknown__) {
+                S::Init__ => {
+                    let output = ContentDeserializer::init(reader, event)?;
+                    self.handle_content(reader, output)
+                }
+                S::Content__(deserializer) => {
+                    let output = deserializer.next(reader, event)?;
+                    self.handle_content(reader, output)
+                }
+                S::Unknown__ => unreachable!(),
+            }
+        }
+        fn finish<R>(mut self, reader: &R) -> Result<super::RegionType, Error>
+        where
+            R: DeserializeReader,
+        {
+            let state = replace(&mut *self.state, RegionTypeDeserializerState::Unknown__);
+            self.finish_state(reader, state)?;
+            Ok(super::RegionType {
+                code: self.code,
+                content: self.content.ok_or_else(|| ErrorKind::MissingContent)?,
+            })
+        }
+    }
+    #[derive(Debug)]
     pub struct RegionalNormalsTypeDeserializer {
         text_summary: Option<::std::string::String>,
         temperature: Vec<super::TemperatureType>,
@@ -12049,7 +12778,7 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct RelativeHumidityTypeDeserializer {
-        units: Option<super::ValidPopUnitsType>,
+        units: Option<super::ValidRelativeHumidityUnitsType>,
         qa_value: Option<super::QaValueType>,
         content: Option<super::ValidRelativeHumiditiesType>,
         state: Box<RelativeHumidityTypeDeserializerState>,
@@ -12065,7 +12794,7 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            let mut units: Option<super::ValidPopUnitsType> = None;
+            let mut units: Option<super::ValidRelativeHumidityUnitsType> = None;
             let mut qa_value: Option<super::QaValueType> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
@@ -14195,10 +14924,214 @@ pub mod quick_xml_deserialize {
         }
     }
     #[derive(Debug)]
+    pub struct SnowLevelTypeDeserializer {
+        text_summary: Option<::std::string::String>,
+        state: Box<SnowLevelTypeDeserializerState>,
+    }
+    #[derive(Debug)]
+    enum SnowLevelTypeDeserializerState {
+        Init__,
+        TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
+        Done__,
+        Unknown__,
+    }
+    impl SnowLevelTypeDeserializer {
+        fn from_bytes_start<R>(reader: &R, bytes_start: &BytesStart<'_>) -> Result<Self, Error>
+        where
+            R: DeserializeReader,
+        {
+            for attrib in filter_xmlns_attributes(bytes_start) {
+                let attrib = attrib?;
+                reader.raise_unexpected_attrib_checked(attrib)?;
+            }
+            Ok(Self {
+                text_summary: None,
+                state: Box::new(SnowLevelTypeDeserializerState::Init__),
+            })
+        }
+        fn finish_state<R>(
+            &mut self,
+            reader: &R,
+            state: SnowLevelTypeDeserializerState,
+        ) -> Result<(), Error>
+        where
+            R: DeserializeReader,
+        {
+            use SnowLevelTypeDeserializerState as S;
+            match state {
+                S::TextSummary(Some(deserializer)) => {
+                    self.store_text_summary(deserializer.finish(reader)?)?
+                }
+                _ => (),
+            }
+            Ok(())
+        }
+        fn store_text_summary(&mut self, value: ::std::string::String) -> Result<(), Error> {
+            if self.text_summary.is_some() {
+                Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
+                    b"textSummary",
+                )))?;
+            }
+            self.text_summary = Some(value);
+            Ok(())
+        }
+        fn handle_text_summary<'de, R>(
+            &mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, ::std::string::String>,
+            fallback: &mut Option<SnowLevelTypeDeserializerState>,
+        ) -> Result<ElementHandlerOutput<'de>, Error>
+        where
+            R: DeserializeReader,
+        {
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            if artifact.is_none() {
+                if self.text_summary.is_some() {
+                    fallback.get_or_insert(SnowLevelTypeDeserializerState::TextSummary(None));
+                    *self.state = SnowLevelTypeDeserializerState::Done__;
+                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                } else {
+                    *self.state = SnowLevelTypeDeserializerState::TextSummary(None);
+                    return Ok(ElementHandlerOutput::break_(event, allow_any));
+                }
+            }
+            if let Some(fallback) = fallback.take() {
+                self.finish_state(reader, fallback)?;
+            }
+            Ok(match artifact {
+                DeserializerArtifact::None => unreachable!(),
+                DeserializerArtifact::Data(data) => {
+                    self.store_text_summary(data)?;
+                    *self.state = SnowLevelTypeDeserializerState::Done__;
+                    ElementHandlerOutput::from_event(event, allow_any)
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    let ret = ElementHandlerOutput::from_event(event, allow_any);
+                    match &ret {
+                        ElementHandlerOutput::Continue { .. } => {
+                            fallback.get_or_insert(SnowLevelTypeDeserializerState::TextSummary(
+                                Some(deserializer),
+                            ));
+                            *self.state = SnowLevelTypeDeserializerState::Done__;
+                        }
+                        ElementHandlerOutput::Break { .. } => {
+                            *self.state =
+                                SnowLevelTypeDeserializerState::TextSummary(Some(deserializer));
+                        }
+                    }
+                    ret
+                }
+            })
+        }
+    }
+    impl<'de> Deserializer<'de, super::SnowLevelType> for SnowLevelTypeDeserializer {
+        fn init<R>(reader: &R, event: Event<'de>) -> DeserializerResult<'de, super::SnowLevelType>
+        where
+            R: DeserializeReader,
+        {
+            reader.init_deserializer_from_start_event(event, Self::from_bytes_start)
+        }
+        fn next<R>(
+            mut self,
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::SnowLevelType>
+        where
+            R: DeserializeReader,
+        {
+            use SnowLevelTypeDeserializerState as S;
+            let mut event = event;
+            let mut fallback = None;
+            let mut allow_any_element = false;
+            let (event, allow_any) = loop {
+                let state = replace(&mut *self.state, S::Unknown__);
+                event = match (state, event) {
+                    (S::TextSummary(Some(deserializer)), event) => {
+                        let output = deserializer.next(reader, event)?;
+                        match self.handle_text_summary(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Continue { event, allow_any } => {
+                                allow_any_element = allow_any_element || allow_any;
+                                event
+                            }
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                        }
+                    }
+                    (_, Event::End(_)) => {
+                        if let Some(fallback) = fallback.take() {
+                            self.finish_state(reader, fallback)?;
+                        }
+                        return Ok(DeserializerOutput {
+                            artifact: DeserializerArtifact::Data(self.finish(reader)?),
+                            event: DeserializerEvent::None,
+                            allow_any: false,
+                        });
+                    }
+                    (S::Init__, event) => {
+                        fallback.get_or_insert(S::Init__);
+                        *self.state = SnowLevelTypeDeserializerState::TextSummary(None);
+                        event
+                    }
+                    (S::TextSummary(None), event @ (Event::Start(_) | Event::Empty(_))) => {
+                        let output = reader.init_start_tag_deserializer(
+                            event,
+                            None,
+                            b"textSummary",
+                            false,
+                        )?;
+                        match self.handle_text_summary(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Continue { event, allow_any } => {
+                                allow_any_element = allow_any_element || allow_any;
+                                event
+                            }
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                        }
+                    }
+                    (S::Done__, event) => {
+                        fallback.get_or_insert(S::Done__);
+                        break (DeserializerEvent::Continue(event), allow_any_element);
+                    }
+                    (S::Unknown__, _) => unreachable!(),
+                    (state, event) => {
+                        *self.state = state;
+                        break (DeserializerEvent::Break(event), false);
+                    }
+                }
+            };
+            if let Some(fallback) = fallback {
+                *self.state = fallback;
+            }
+            Ok(DeserializerOutput {
+                artifact: DeserializerArtifact::Deserializer(self),
+                event,
+                allow_any,
+            })
+        }
+        fn finish<R>(mut self, reader: &R) -> Result<super::SnowLevelType, Error>
+        where
+            R: DeserializeReader,
+        {
+            let state = replace(&mut *self.state, SnowLevelTypeDeserializerState::Unknown__);
+            self.finish_state(reader, state)?;
+            Ok(super::SnowLevelType {
+                text_summary: self
+                    .text_summary
+                    .ok_or_else(|| ErrorKind::MissingElement("textSummary".into()))?,
+            })
+        }
+    }
+    #[derive(Debug)]
     pub struct StationTypeDeserializer {
         code: Option<::std::string::String>,
-        lat: Option<super::PeriodRangeType>,
-        lon: Option<super::PeriodRangeType>,
+        lat: Option<super::ValidLatLonType>,
+        lon: Option<super::ValidLatLonType>,
         country: Option<super::ValidCountryCodeType>,
         content: Option<::std::string::String>,
         state: Box<StationTypeDeserializerState>,
@@ -14215,8 +15148,8 @@ pub mod quick_xml_deserialize {
             R: DeserializeReader,
         {
             let mut code: Option<::std::string::String> = None;
-            let mut lat: Option<super::PeriodRangeType> = None;
-            let mut lon: Option<super::PeriodRangeType> = None;
+            let mut lat: Option<super::ValidLatLonType> = None;
+            let mut lon: Option<super::ValidLatLonType> = None;
             let mut country: Option<super::ValidCountryCodeType> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
@@ -14355,13 +15288,13 @@ pub mod quick_xml_deserialize {
     pub struct TemperatureHourlyTypeDeserializer {
         units: Option<super::ValidTemperatureUnitsType>,
         unit_type: Option<super::ValidUnitTypesType>,
-        content: Option<super::ValidPressuresType>,
+        content: Option<super::ValidTemperaturesType>,
         state: Box<TemperatureHourlyTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum TemperatureHourlyTypeDeserializerState {
         Init__,
-        Content__(<super::ValidPressuresType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidTemperaturesType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl TemperatureHourlyTypeDeserializer {
@@ -14401,7 +15334,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::ValidPressuresType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidTemperaturesType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -14411,7 +15344,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::ValidPressuresType>,
+            output: DeserializerOutput<'de, super::ValidTemperaturesType>,
         ) -> DeserializerResult<'de, super::TemperatureHourlyType>
         where
             R: DeserializeReader,
@@ -14510,13 +15443,13 @@ pub mod quick_xml_deserialize {
         year: Option<::std::string::String>,
         period: Option<super::PeriodRangeType>,
         qa_value: Option<super::QaValueType>,
-        content: Option<super::ValidPressuresType>,
+        content: Option<super::ValidTemperaturesType>,
         state: Box<TemperatureTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum TemperatureTypeDeserializerState {
         Init__,
-        Content__(<super::ValidPressuresType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidTemperaturesType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl TemperatureTypeDeserializer {
@@ -14572,7 +15505,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::ValidPressuresType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidTemperaturesType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -14582,7 +15515,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::ValidPressuresType>,
+            output: DeserializerOutput<'de, super::ValidTemperaturesType>,
         ) -> DeserializerResult<'de, super::TemperatureType>
         where
             R: DeserializeReader,
@@ -14990,7 +15923,7 @@ pub mod quick_xml_deserialize {
         zone: Option<super::ValidTimeZonesType>,
         hour: Option<super::HourType>,
         minute: Option<super::MinuteType>,
-        second: Option<super::MinuteType>,
+        second: Option<super::SecondType>,
         state: Box<TimeTypeDeserializerState>,
     }
     #[derive(Debug)]
@@ -14998,7 +15931,7 @@ pub mod quick_xml_deserialize {
         Init__,
         Hour(Option<<super::HourType as WithDeserializer>::Deserializer>),
         Minute(Option<<super::MinuteType as WithDeserializer>::Deserializer>),
-        Second(Option<<super::MinuteType as WithDeserializer>::Deserializer>),
+        Second(Option<<super::SecondType as WithDeserializer>::Deserializer>),
         Done__,
         Unknown__,
     }
@@ -15061,7 +15994,7 @@ pub mod quick_xml_deserialize {
             self.minute = Some(value);
             Ok(())
         }
-        fn store_second(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_second(&mut self, value: super::SecondType) -> Result<(), Error> {
             if self.second.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"second",
@@ -15174,7 +16107,7 @@ pub mod quick_xml_deserialize {
         fn handle_second<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::SecondType>,
             fallback: &mut Option<TimeTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -15371,13 +16304,13 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct UvHourlyTypeDeserializer {
-        index: Option<super::MinuteType>,
+        index: Option<super::UvIndexType>,
         state: Box<UvHourlyTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum UvHourlyTypeDeserializerState {
         Init__,
-        Index(Option<<super::MinuteType as WithDeserializer>::Deserializer>),
+        Index(Option<<super::UvIndexType as WithDeserializer>::Deserializer>),
         Done__,
         Unknown__,
     }
@@ -15410,7 +16343,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_index(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_index(&mut self, value: super::UvIndexType) -> Result<(), Error> {
             if self.index.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"index",
@@ -15422,7 +16355,7 @@ pub mod quick_xml_deserialize {
         fn handle_index<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::UvIndexType>,
             fallback: &mut Option<UvHourlyTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -15569,14 +16502,14 @@ pub mod quick_xml_deserialize {
     #[derive(Debug)]
     pub struct UvTypeDeserializer {
         category: Option<super::UvCategoryType>,
-        index: Option<super::MinuteType>,
+        index: Option<super::UvIndexType>,
         text_summary: Option<::std::string::String>,
         state: Box<UvTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum UvTypeDeserializerState {
         Init__,
-        Index(Option<<super::MinuteType as WithDeserializer>::Deserializer>),
+        Index(Option<<super::UvIndexType as WithDeserializer>::Deserializer>),
         TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
         Done__,
         Unknown__,
@@ -15620,7 +16553,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_index(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_index(&mut self, value: super::UvIndexType) -> Result<(), Error> {
             if self.index.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"index",
@@ -15641,7 +16574,7 @@ pub mod quick_xml_deserialize {
         fn handle_index<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::UvIndexType>,
             fallback: &mut Option<UvTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -16253,13 +17186,13 @@ pub mod quick_xml_deserialize {
         units: Option<super::ValidVisibilityUnitsType>,
         unit_type: Option<super::ValidUnitTypesType>,
         qa_value: Option<super::QaValueType>,
-        content: Option<super::ValidPressuresType>,
+        content: Option<super::ValidVisibilitiesType>,
         state: Box<VisibilityTypeCondTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum VisibilityTypeCondTypeDeserializerState {
         Init__,
-        Content__(<super::ValidPressuresType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidVisibilitiesType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl VisibilityTypeCondTypeDeserializer {
@@ -16303,7 +17236,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::ValidPressuresType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidVisibilitiesType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -16313,7 +17246,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::ValidPressuresType>,
+            output: DeserializerOutput<'de, super::ValidVisibilitiesType>,
         ) -> DeserializerResult<'de, super::VisibilityTypeCondType>
         where
             R: DeserializeReader,
@@ -16736,7 +17669,7 @@ pub mod quick_xml_deserialize {
         type_: Option<super::ValidWarningTypesType>,
         description: Option<::std::string::String>,
         priority: Option<super::ValidWarningPrioritiesType>,
-        expiry_time: Option<super::MinuteType>,
+        expiry_time: Option<XsDateTime>,
         url: Option<::std::string::String>,
         date_time: Vec<super::DateStampType>,
         state: Box<WarningEventTypeDeserializerState>,
@@ -16756,7 +17689,7 @@ pub mod quick_xml_deserialize {
             let mut type_: Option<super::ValidWarningTypesType> = None;
             let mut description: Option<::std::string::String> = None;
             let mut priority: Option<super::ValidWarningPrioritiesType> = None;
-            let mut expiry_time: Option<super::MinuteType> = None;
+            let mut expiry_time: Option<XsDateTime> = None;
             let mut url: Option<::std::string::String> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
@@ -17178,13 +18111,13 @@ pub mod quick_xml_deserialize {
     pub struct WindBearingTypeDeserializer {
         units: Option<super::ValidWindBearingUnitsType>,
         qa_value: Option<super::QaValueType>,
-        content: Option<super::MinuteType>,
+        content: Option<super::ValidWindBearingsType>,
         state: Box<WindBearingTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum WindBearingTypeDeserializerState {
         Init__,
-        Content__(<super::MinuteType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidWindBearingsType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl WindBearingTypeDeserializer {
@@ -17224,7 +18157,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidWindBearingsType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -17234,7 +18167,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::ValidWindBearingsType>,
         ) -> DeserializerResult<'de, super::WindBearingType>
         where
             R: DeserializeReader,
@@ -17325,13 +18258,13 @@ pub mod quick_xml_deserialize {
     #[derive(Debug)]
     pub struct WindChillHourlyTypeDeserializer {
         unit_type: Option<super::ValidUnitTypesType>,
-        content: Option<super::MinuteType>,
+        content: Option<super::ValidWindChillsType>,
         state: Box<WindChillHourlyTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum WindChillHourlyTypeDeserializerState {
         Init__,
-        Content__(<super::MinuteType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidWindChillsType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl WindChillHourlyTypeDeserializer {
@@ -17367,7 +18300,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::MinuteType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidWindChillsType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -17377,7 +18310,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::MinuteType>,
+            output: DeserializerOutput<'de, super::ValidWindChillsType>,
         ) -> DeserializerResult<'de, super::WindChillHourlyType>
         where
             R: DeserializeReader,
@@ -18402,13 +19335,13 @@ pub mod quick_xml_deserialize {
         units: Option<super::ValidWindUnitsType>,
         unit_type: Option<super::ValidUnitTypesType>,
         qa_value: Option<super::QaValueType>,
-        content: Option<super::ValidPressuresType>,
+        content: Option<super::ValidWindSpeedsType>,
         state: Box<WindSpeedTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum WindSpeedTypeDeserializerState {
         Init__,
-        Content__(<super::ValidPressuresType as WithDeserializer>::Deserializer),
+        Content__(<super::ValidWindSpeedsType as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl WindSpeedTypeDeserializer {
@@ -18452,7 +19385,7 @@ pub mod quick_xml_deserialize {
             }
             Ok(())
         }
-        fn store_content(&mut self, value: super::ValidPressuresType) -> Result<(), Error> {
+        fn store_content(&mut self, value: super::ValidWindSpeedsType) -> Result<(), Error> {
             if self.content.is_some() {
                 Err(ErrorKind::DuplicateContent)?;
             }
@@ -18462,7 +19395,7 @@ pub mod quick_xml_deserialize {
         fn handle_content<'de, R>(
             mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::ValidPressuresType>,
+            output: DeserializerOutput<'de, super::ValidWindSpeedsType>,
         ) -> DeserializerResult<'de, super::WindSpeedType>
         where
             R: DeserializeReader,
@@ -19331,13 +20264,55 @@ pub mod xs {
             ))
         }
     }
-    pub type EntityType = EntitiesType;
+    #[derive(Debug, Default)]
+    pub struct EntityType(pub Vec<::std::string::String>);
+    impl DeserializeBytes for EntityType {
+        fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+        where
+            R: DeserializeReader,
+        {
+            Ok(Self(
+                bytes
+                    .split(|b| *b == b' ' || *b == b'|' || *b == b',' || *b == b';')
+                    .map(|bytes| ::std::string::String::deserialize_bytes(reader, bytes))
+                    .collect::<Result<Vec<_>, _>>()?,
+            ))
+        }
+    }
     pub type IdType = ::std::string::String;
     pub type IdrefType = ::std::string::String;
-    pub type IdrefsType = EntitiesType;
+    #[derive(Debug, Default)]
+    pub struct IdrefsType(pub Vec<::std::string::String>);
+    impl DeserializeBytes for IdrefsType {
+        fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+        where
+            R: DeserializeReader,
+        {
+            Ok(Self(
+                bytes
+                    .split(|b| *b == b' ' || *b == b'|' || *b == b',' || *b == b';')
+                    .map(|bytes| ::std::string::String::deserialize_bytes(reader, bytes))
+                    .collect::<Result<Vec<_>, _>>()?,
+            ))
+        }
+    }
     pub type NcNameType = ::std::string::String;
     pub type NmtokenType = ::std::string::String;
-    pub type NmtokensType = EntitiesType;
+    #[derive(Debug, Default)]
+    pub struct NmtokensType(pub Vec<::std::string::String>);
+    impl DeserializeBytes for NmtokensType {
+        fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+        where
+            R: DeserializeReader,
+        {
+            Ok(Self(
+                bytes
+                    .split(|b| *b == b' ' || *b == b'|' || *b == b',' || *b == b';')
+                    .map(|bytes| ::std::string::String::deserialize_bytes(reader, bytes))
+                    .collect::<Result<Vec<_>, _>>()?,
+            ))
+        }
+    }
     pub type NotationType = ::std::string::String;
     pub type NameType = ::std::string::String;
     pub type QNameType = ::std::string::String;

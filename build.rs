@@ -1,15 +1,18 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
+use proc_macro2::TokenStream;
+use quote::{ToTokens, quote};
 use std::{
     fs::File,
     io::Write,
     process::{Command, Output, Stdio},
 };
-
-use quote::ToTokens;
 use xsd_parser::{
-    Config, Error, MetaTypes,
-    config::{GeneratorFlags, InterpreterFlags, OptimizerFlags, RenderStep, Schema},
+    Config, Error, IdentType, MetaTypes,
+    config::{
+        GeneratorFlags, IdentTriple, InterpreterFlags, MetaType, OptimizerFlags, RenderStep, Schema,
+    },
     exec_generator, exec_interpreter, exec_optimizer, exec_parser, exec_render,
-    models::meta::MetaTypeVariant,
+    models::meta::{CustomMeta, MetaTypeVariant},
 };
 fn main() -> Result<(), Error> {
     let mut config = Config::default();
@@ -21,7 +24,15 @@ fn main() -> Result<(), Error> {
         Schema::File("schemas/weather.xsd".into()),
     ];
     config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
-    config.optimizer.flags = OptimizerFlags::all() - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS;
+    config.interpreter.types = vec![(
+        IdentTriple::from((IdentType::Type, "timeStampType")),
+        MetaType::from(
+            CustomMeta::new("XsDateTime").include_from("crate::models::schemas::XsDateTime"),
+        ),
+    )];
+    config.optimizer.flags = OptimizerFlags::all()
+        - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS
+        - OptimizerFlags::REMOVE_DUPLICATES;
     config.generator.flags = GeneratorFlags::all();
 
     let config = config.with_render_steps([
@@ -43,11 +54,26 @@ fn main() -> Result<(), Error> {
 
     let code = rustfmt_pretty_print(code).unwrap();
 
-    let mut file = File::create("src/schema.rs")?;
+    let mut file = File::create("src/models/generated_schema.rs")?;
     file.write_all(code.to_string().as_bytes())?;
 
     Ok(())
 }
+
+// fn chrono_datetime_default(s: &str) -> Option<TokenStream> {
+//     let naive = NaiveDateTime::parse_from_str(s, "%Y%m%d%H%M%S").ok()?;
+//     let dt = DateTime::<Utc>::from_naive_utc_and_offset(naive, Utc);
+//
+//     let ts = dt.timestamp();
+//     let nanos = dt.timestamp_subsec_nanos();
+//
+//     Some(quote! {
+//         chrono::DateTime::<chrono::Utc>::from_utc(
+//             chrono::NaiveDateTime::from_timestamp_opt(#ts, #nanos).unwrap(),
+//             chrono::Utc
+//         )
+//     })
+// }
 
 fn replace_variant_names(mut types: MetaTypes) -> MetaTypes {
     for (_ident, ty) in types.items.iter_mut() {
