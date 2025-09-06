@@ -182,6 +182,7 @@ pub struct ForecastTypeFullType {
     pub precipitation: PrecipTypeForecastType,
     pub snow_level: Option<SnowLevelType>,
     pub wind_chill: Option<WindChillType>,
+    pub humidex: Option<HumidexType>,
     pub visibility: Option<VisibilityTypeForecastType>,
     pub uv: Option<UvType>,
     pub relative_humidity: Option<RelativeHumidityType>,
@@ -262,8 +263,8 @@ impl WithDeserializer for HumidexHourlyType {
 }
 #[derive(Debug)]
 pub struct HumidexType {
-    pub text_summary: ::std::string::String,
-    pub calculated: [CalculatedHumidexType; 2usize],
+    pub text_summary: Option<::std::string::String>,
+    pub calculated: Vec<CalculatedHumidexType>,
 }
 impl WithDeserializer for HumidexType {
     type Deserializer = quick_xml_deserialize::HumidexTypeDeserializer;
@@ -5885,6 +5886,7 @@ pub mod quick_xml_deserialize {
         precipitation: Option<super::PrecipTypeForecastType>,
         snow_level: Option<super::SnowLevelType>,
         wind_chill: Option<super::WindChillType>,
+        humidex: Option<super::HumidexType>,
         visibility: Option<super::VisibilityTypeForecastType>,
         uv: Option<super::UvType>,
         relative_humidity: Option<super::RelativeHumidityType>,
@@ -5905,6 +5907,7 @@ pub mod quick_xml_deserialize {
         Precipitation(Option<<super::PrecipTypeForecastType as WithDeserializer>::Deserializer>),
         SnowLevel(Option<<super::SnowLevelType as WithDeserializer>::Deserializer>),
         WindChill(Option<<super::WindChillType as WithDeserializer>::Deserializer>),
+        Humidex(Option<<super::HumidexType as WithDeserializer>::Deserializer>),
         Visibility(Option<<super::VisibilityTypeForecastType as WithDeserializer>::Deserializer>),
         Uv(Option<<super::UvType as WithDeserializer>::Deserializer>),
         RelativeHumidity(Option<<super::RelativeHumidityType as WithDeserializer>::Deserializer>),
@@ -5931,6 +5934,7 @@ pub mod quick_xml_deserialize {
                 precipitation: None,
                 snow_level: None,
                 wind_chill: None,
+                humidex: None,
                 visibility: None,
                 uv: None,
                 relative_humidity: None,
@@ -5970,6 +5974,9 @@ pub mod quick_xml_deserialize {
                 }
                 S::WindChill(Some(deserializer)) => {
                     self.store_wind_chill(deserializer.finish(reader)?)?
+                }
+                S::Humidex(Some(deserializer)) => {
+                    self.store_humidex(deserializer.finish(reader)?)?
                 }
                 S::Visibility(Some(deserializer)) => {
                     self.store_visibility(deserializer.finish(reader)?)?
@@ -6068,6 +6075,15 @@ pub mod quick_xml_deserialize {
                 )))?;
             }
             self.wind_chill = Some(value);
+            Ok(())
+        }
+        fn store_humidex(&mut self, value: super::HumidexType) -> Result<(), Error> {
+            if self.humidex.is_some() {
+                Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
+                    b"humidex",
+                )))?;
+            }
+            self.humidex = Some(value);
             Ok(())
         }
         fn store_visibility(
@@ -6564,7 +6580,7 @@ pub mod quick_xml_deserialize {
             } = output;
             if artifact.is_none() {
                 fallback.get_or_insert(ForecastTypeFullTypeDeserializerState::WindChill(None));
-                *self.state = ForecastTypeFullTypeDeserializerState::Visibility(None);
+                *self.state = ForecastTypeFullTypeDeserializerState::Humidex(None);
                 return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
@@ -6574,7 +6590,7 @@ pub mod quick_xml_deserialize {
                 DeserializerArtifact::None => unreachable!(),
                 DeserializerArtifact::Data(data) => {
                     self.store_wind_chill(data)?;
-                    *self.state = ForecastTypeFullTypeDeserializerState::Visibility(None);
+                    *self.state = ForecastTypeFullTypeDeserializerState::Humidex(None);
                     ElementHandlerOutput::from_event(event, allow_any)
                 }
                 DeserializerArtifact::Deserializer(deserializer) => {
@@ -6586,12 +6602,59 @@ pub mod quick_xml_deserialize {
                                     deserializer,
                                 )),
                             );
-                            *self.state = ForecastTypeFullTypeDeserializerState::Visibility(None);
+                            *self.state = ForecastTypeFullTypeDeserializerState::Humidex(None);
                         }
                         ElementHandlerOutput::Break { .. } => {
                             *self.state = ForecastTypeFullTypeDeserializerState::WindChill(Some(
                                 deserializer,
                             ));
+                        }
+                    }
+                    ret
+                }
+            })
+        }
+        fn handle_humidex<'de, R>(
+            &mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, super::HumidexType>,
+            fallback: &mut Option<ForecastTypeFullTypeDeserializerState>,
+        ) -> Result<ElementHandlerOutput<'de>, Error>
+        where
+            R: DeserializeReader,
+        {
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            if artifact.is_none() {
+                fallback.get_or_insert(ForecastTypeFullTypeDeserializerState::Humidex(None));
+                *self.state = ForecastTypeFullTypeDeserializerState::Visibility(None);
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
+            }
+            if let Some(fallback) = fallback.take() {
+                self.finish_state(reader, fallback)?;
+            }
+            Ok(match artifact {
+                DeserializerArtifact::None => unreachable!(),
+                DeserializerArtifact::Data(data) => {
+                    self.store_humidex(data)?;
+                    *self.state = ForecastTypeFullTypeDeserializerState::Visibility(None);
+                    ElementHandlerOutput::from_event(event, allow_any)
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    let ret = ElementHandlerOutput::from_event(event, allow_any);
+                    match &ret {
+                        ElementHandlerOutput::Continue { .. } => {
+                            fallback.get_or_insert(ForecastTypeFullTypeDeserializerState::Humidex(
+                                Some(deserializer),
+                            ));
+                            *self.state = ForecastTypeFullTypeDeserializerState::Visibility(None);
+                        }
+                        ElementHandlerOutput::Break { .. } => {
+                            *self.state =
+                                ForecastTypeFullTypeDeserializerState::Humidex(Some(deserializer));
                         }
                     }
                     ret
@@ -6929,6 +6992,18 @@ pub mod quick_xml_deserialize {
                             }
                         }
                     }
+                    (S::Humidex(Some(deserializer)), event) => {
+                        let output = deserializer.next(reader, event)?;
+                        match self.handle_humidex(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Continue { event, allow_any } => {
+                                allow_any_element = allow_any_element || allow_any;
+                                event
+                            }
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                        }
+                    }
                     (S::Visibility(Some(deserializer)), event) => {
                         let output = deserializer.next(reader, event)?;
                         match self.handle_visibility(reader, output, &mut fallback)? {
@@ -7129,6 +7204,19 @@ pub mod quick_xml_deserialize {
                             }
                         }
                     }
+                    (S::Humidex(None), event @ (Event::Start(_) | Event::Empty(_))) => {
+                        let output =
+                            reader.init_start_tag_deserializer(event, None, b"humidex", false)?;
+                        match self.handle_humidex(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Continue { event, allow_any } => {
+                                allow_any_element = allow_any_element || allow_any;
+                                event
+                            }
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                        }
+                    }
                     (S::Visibility(None), event @ (Event::Start(_) | Event::Empty(_))) => {
                         let output = reader.init_start_tag_deserializer(
                             event,
@@ -7242,6 +7330,7 @@ pub mod quick_xml_deserialize {
                     .ok_or_else(|| ErrorKind::MissingElement("precipitation".into()))?,
                 snow_level: self.snow_level,
                 wind_chill: self.wind_chill,
+                humidex: self.humidex,
                 visibility: self.visibility,
                 uv: self.uv,
                 relative_humidity: self.relative_humidity,
@@ -9029,14 +9118,9 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.text_summary.is_some() {
-                    fallback.get_or_insert(HumidexTypeDeserializerState::TextSummary(None));
-                    *self.state = HumidexTypeDeserializerState::Calculated(None);
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                } else {
-                    *self.state = HumidexTypeDeserializerState::TextSummary(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                }
+                fallback.get_or_insert(HumidexTypeDeserializerState::TextSummary(None));
+                *self.state = HumidexTypeDeserializerState::Calculated(None);
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -9081,14 +9165,9 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.calculated.len() < 2usize {
-                    *self.state = HumidexTypeDeserializerState::Calculated(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                } else {
-                    fallback.get_or_insert(HumidexTypeDeserializerState::Calculated(None));
-                    *self.state = HumidexTypeDeserializerState::Done__;
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                }
+                fallback.get_or_insert(HumidexTypeDeserializerState::Calculated(None));
+                *self.state = HumidexTypeDeserializerState::Done__;
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -9111,11 +9190,7 @@ pub mod quick_xml_deserialize {
                             fallback.get_or_insert(HumidexTypeDeserializerState::Calculated(Some(
                                 deserializer,
                             )));
-                            if self.calculated.len().saturating_add(1) < 2usize {
-                                *self.state = HumidexTypeDeserializerState::Calculated(None);
-                            } else {
-                                *self.state = HumidexTypeDeserializerState::Done__;
-                            }
+                            *self.state = HumidexTypeDeserializerState::Calculated(None);
                         }
                         ElementHandlerOutput::Break { .. } => {
                             *self.state =
@@ -9249,16 +9324,8 @@ pub mod quick_xml_deserialize {
             let state = replace(&mut *self.state, HumidexTypeDeserializerState::Unknown__);
             self.finish_state(reader, state)?;
             Ok(super::HumidexType {
-                text_summary: self
-                    .text_summary
-                    .ok_or_else(|| ErrorKind::MissingElement("textSummary".into()))?,
-                calculated: self.calculated.try_into().map_err(|vec: Vec<_>| {
-                    ErrorKind::InsufficientSize {
-                        min: 2usize,
-                        max: 2usize,
-                        actual: vec.len(),
-                    }
-                })?,
+                text_summary: self.text_summary,
+                calculated: self.calculated,
             })
         }
     }
