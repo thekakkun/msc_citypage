@@ -349,9 +349,9 @@
     <!-- =============== Wind chill =================== -->
     <xs:complexType name="windChillType">
         <xs:sequence>
-            <xs:element name="textSummary" type="textSummaryType" />
-            <xs:element name="calculated" type="calculatedWindChillType" maxOccurs="2" />
-            <xs:element name="frostbite" type="frostbiteWindChillType" />
+            <xs:element name="textSummary" type="textSummaryType" minOccurs="0" />
+            <xs:element name="calculated" type="calculatedWindChillType" minOccurs="0" maxOccurs="2" />
+            <xs:element name="frostbite" type="frostbiteWindChillType" minOccurs="0" />
         </xs:sequence>
     </xs:complexType>
     <xs:simpleType name="frostbiteWindChillType">

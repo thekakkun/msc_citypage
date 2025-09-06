@@ -1819,9 +1819,9 @@ impl WithDeserializer for WindChillHourlyType {
 }
 #[derive(Debug)]
 pub struct WindChillType {
-    pub text_summary: ::std::string::String,
+    pub text_summary: Option<::std::string::String>,
     pub calculated: Vec<CalculatedWindChillType>,
-    pub frostbite: FrostbiteWindChillType,
+    pub frostbite: Option<FrostbiteWindChillType>,
 }
 impl WithDeserializer for WindChillType {
     type Deserializer = quick_xml_deserialize::WindChillTypeDeserializer;
@@ -18492,14 +18492,9 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.text_summary.is_some() {
-                    fallback.get_or_insert(WindChillTypeDeserializerState::TextSummary(None));
-                    *self.state = WindChillTypeDeserializerState::Calculated(None);
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                } else {
-                    *self.state = WindChillTypeDeserializerState::TextSummary(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                }
+                fallback.get_or_insert(WindChillTypeDeserializerState::TextSummary(None));
+                *self.state = WindChillTypeDeserializerState::Calculated(None);
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -18544,14 +18539,9 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.calculated.len() < 1usize {
-                    *self.state = WindChillTypeDeserializerState::Calculated(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                } else {
-                    fallback.get_or_insert(WindChillTypeDeserializerState::Calculated(None));
-                    *self.state = WindChillTypeDeserializerState::Frostbite(None);
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                }
+                fallback.get_or_insert(WindChillTypeDeserializerState::Calculated(None));
+                *self.state = WindChillTypeDeserializerState::Frostbite(None);
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -18574,11 +18564,7 @@ pub mod quick_xml_deserialize {
                             fallback.get_or_insert(WindChillTypeDeserializerState::Calculated(
                                 Some(deserializer),
                             ));
-                            if self.calculated.len().saturating_add(1) < 1usize {
-                                *self.state = WindChillTypeDeserializerState::Calculated(None);
-                            } else {
-                                *self.state = WindChillTypeDeserializerState::Frostbite(None);
-                            }
+                            *self.state = WindChillTypeDeserializerState::Calculated(None);
                         }
                         ElementHandlerOutput::Break { .. } => {
                             *self.state =
@@ -18604,14 +18590,9 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.frostbite.is_some() {
-                    fallback.get_or_insert(WindChillTypeDeserializerState::Frostbite(None));
-                    *self.state = WindChillTypeDeserializerState::Done__;
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                } else {
-                    *self.state = WindChillTypeDeserializerState::Frostbite(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                }
+                fallback.get_or_insert(WindChillTypeDeserializerState::Frostbite(None));
+                *self.state = WindChillTypeDeserializerState::Done__;
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -18789,13 +18770,9 @@ pub mod quick_xml_deserialize {
             let state = replace(&mut *self.state, WindChillTypeDeserializerState::Unknown__);
             self.finish_state(reader, state)?;
             Ok(super::WindChillType {
-                text_summary: self
-                    .text_summary
-                    .ok_or_else(|| ErrorKind::MissingElement("textSummary".into()))?,
+                text_summary: self.text_summary,
                 calculated: self.calculated,
-                frostbite: self
-                    .frostbite
-                    .ok_or_else(|| ErrorKind::MissingElement("frostbite".into()))?,
+                frostbite: self.frostbite,
             })
         }
     }
