@@ -12,7 +12,6 @@ use lapin::{
     },
     types::FieldTable,
 };
-use quick_xml::de;
 use url::Url;
 
 pub struct CityPageStream {
