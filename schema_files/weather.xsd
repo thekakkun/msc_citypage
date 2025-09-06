@@ -46,7 +46,7 @@
         <xs:attribute name="description" type="xs:string" />
         <xs:attribute name="priority" type="validWarningPriorities" />
         <xs:attribute name="expiryTime" type="timeStampType" />
-        <xs:attribute name="url" type="xs:anyURI" minOccurs="0" />
+        <xs:attribute name="url" type="xs:anyURI" />
     </xs:complexType>
     <xs:simpleType name="validWarningTypes">
         <xs:restriction base="xs:string">
@@ -367,7 +367,7 @@
     <xs:complexType name="calculatedWindChillType">
         <xs:simpleContent>
             <xs:extension base="validWindChills">
-                <xs:attribute name="index" type="validIndexTypes" minOccurs="0" maxOccurs="2" />
+                <xs:attribute name="index" type="validIndexTypes" />
                 <xs:attribute name="unitType" type="validUnitTypes" />
                 <xs:attribute name="class" type="validWindChillClass" />
                 <xs:attribute name="qaValue" type="qaValueType" />

@@ -1,4 +1,4 @@
-pub mod custom;
+mod custom;
 
 #[allow(
     dead_code,
@@ -10,7 +10,7 @@ pub mod custom;
     clippy::redundant_field_names
 )]
 #[rustfmt::skip]
-pub mod generated;
+mod generated;
 
 pub use custom::*;
 pub use generated::{SiteData, SiteList};

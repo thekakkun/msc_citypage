@@ -27,7 +27,7 @@
             <xs:element name="uv" type="uvType" minOccurs="0" maxOccurs="1" />
             <xs:element name="relativeHumidity" type="relativeHumidityType" minOccurs="0"
                 maxOccurs="1" />
-            <xs:element name="comfort" type="comfortType" minOccurs="0" maxOccurs="1" />
+            <!-- <xs:element name="comfort" type="comfortType" minOccurs="0" maxOccurs="1" /> -->
             <xs:element name="frost" type="frostType" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
     </xs:complexType>
