@@ -417,8 +417,8 @@
     <!-- =================== Humidex =================== -->
     <xs:complexType name="humidexType">
         <xs:sequence>
-            <xs:element name="textSummary" type="textSummaryType" />
-            <xs:element name="calculated" type="calculatedHumidexType" minOccurs="2" maxOccurs="2" />
+            <xs:element name="textSummary" type="textSummaryType" minOccurs="0" />
+            <xs:element name="calculated" type="calculatedHumidexType" minOccurs="0" maxOccurs="2" />
         </xs:sequence>
     </xs:complexType>
     <xs:complexType name="calculatedHumidexType">
