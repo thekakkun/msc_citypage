@@ -20,12 +20,23 @@ mod tests {
     use encoding_rs::WINDOWS_1252;
     use xsd_parser::quick_xml::{DeserializeSync, IoReader, XmlReader};
 
-    use crate::models::generated_schema::SiteList;
+    use crate::models::generated_schema::{SiteData, SiteList};
 
     #[test]
-    fn parse_weather() {
+    fn parse_site_data() {
         let input_file =
-            std::fs::File::open("0250830T193948.467Z_MSC_CitypageWeather_s0000024_en.xml").unwrap();
+            std::fs::File::open("20250904T020028.758Z_MSC_CitypageWeather_s0000168_en.xml")
+                .unwrap();
+        let reader = BufReader::new(input_file);
+        let mut reader = IoReader::new(reader).with_error_info();
+        let mut doc = SiteData::deserialize(&mut reader).unwrap();
+
+        print!("created structure = {:#?}\n\n", doc);
+    }
+
+    #[test]
+    fn parse_site_list() {
+        let input_file = std::fs::File::open("siteList.xml").unwrap();
         let mut buf = Vec::new();
         BufReader::new(input_file).read_to_end(&mut buf).unwrap();
 
