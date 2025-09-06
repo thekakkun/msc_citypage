@@ -348,7 +348,7 @@
     </xs:simpleType>
     <!-- =============== Wind chill =================== -->
     <xs:complexType name="windChillType">
-        <xs:sequence>
+        <xs:sequence minOccurs="0">
             <xs:element name="textSummary" type="textSummaryType" />
             <xs:element name="calculated" type="calculatedWindChillType" maxOccurs="2" />
             <xs:element name="frostbite" type="frostbiteWindChillType" />
@@ -416,7 +416,7 @@
     </xs:simpleType>
     <!-- =================== Humidex =================== -->
     <xs:complexType name="humidexType">
-        <xs:sequence>
+        <xs:sequence minOccurs="0">
             <xs:element name="textSummary" type="textSummaryType" />
             <xs:element name="calculated" type="calculatedHumidexType" minOccurs="2" maxOccurs="2" />
         </xs:sequence>
@@ -536,8 +536,8 @@
     <!-- =================== Visibility Forecast =================== -->
     <xs:complexType name="visibilityTypeForecast">
         <xs:sequence>
-            <xs:element name="windVisib" type="visibilitySubTypeForecast" />
-            <xs:element name="otherVisib" type="visibilitySubTypeForecast" />
+            <xs:element name="windVisib" type="visibilitySubTypeForecast" minOccurs="0" />
+            <xs:element name="otherVisib" type="visibilitySubTypeForecast" minOccurs="0" />
         </xs:sequence>
     </xs:complexType>
     <xs:complexType name="visibilitySubTypeForecast">
@@ -678,7 +678,7 @@
                 </xs:restriction>
             </xs:simpleType>
             <xs:simpleType>
-                <xs:restriction base="xs:integer">
+                <xs:restriction base="xs:float">
                     <xs:minInclusive value="0" />
                     <xs:maxInclusive value="360" />
                 </xs:restriction>
