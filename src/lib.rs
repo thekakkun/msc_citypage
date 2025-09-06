@@ -1,13 +1,4 @@
-#[allow(
-    dead_code,
-    unused_mut,
-    unused_variables,
-    clippy::never_loop,
-    clippy::single_match,
-    clippy::redundant_field_names
-)]
-#[rustfmt::skip]
-pub mod models;
+pub mod schemas;
 
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
@@ -20,7 +11,7 @@ mod tests {
     use encoding_rs::WINDOWS_1252;
     use xsd_parser::quick_xml::{DeserializeSync, IoReader, XmlReader};
 
-    use crate::models::generated_schema::{SiteData, SiteList};
+    use crate::schemas::{SiteData, SiteList};
 
     #[test]
     fn parse_site_data() {

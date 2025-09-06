@@ -1,6 +1,4 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
-use proc_macro2::TokenStream;
-use quote::{ToTokens, quote};
+use quote::ToTokens;
 use std::{
     fs::File,
     io::Write,
@@ -26,9 +24,7 @@ fn main() -> Result<(), Error> {
     config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
     config.interpreter.types = vec![(
         IdentTriple::from((IdentType::Type, "timeStampType")),
-        MetaType::from(
-            CustomMeta::new("XsDateTime").include_from("crate::models::schemas::XsDateTime"),
-        ),
+        MetaType::from(CustomMeta::new("XsDateTime").include_from("crate::schemas::XsDateTime")),
     )];
     config.optimizer.flags = OptimizerFlags::all()
         - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS
@@ -54,26 +50,11 @@ fn main() -> Result<(), Error> {
 
     let code = rustfmt_pretty_print(code).unwrap();
 
-    let mut file = File::create("src/models/generated_schema.rs")?;
+    let mut file = File::create("src/schemas/generated.rs")?;
     file.write_all(code.to_string().as_bytes())?;
 
     Ok(())
 }
-
-// fn chrono_datetime_default(s: &str) -> Option<TokenStream> {
-//     let naive = NaiveDateTime::parse_from_str(s, "%Y%m%d%H%M%S").ok()?;
-//     let dt = DateTime::<Utc>::from_naive_utc_and_offset(naive, Utc);
-//
-//     let ts = dt.timestamp();
-//     let nanos = dt.timestamp_subsec_nanos();
-//
-//     Some(quote! {
-//         chrono::DateTime::<chrono::Utc>::from_utc(
-//             chrono::NaiveDateTime::from_timestamp_opt(#ts, #nanos).unwrap(),
-//             chrono::Utc
-//         )
-//     })
-// }
 
 fn replace_variant_names(mut types: MetaTypes) -> MetaTypes {
     for (_ident, ty) in types.items.iter_mut() {

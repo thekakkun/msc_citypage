@@ -1,4 +1,4 @@
-use crate::models::schemas::XsDateTime;
+use crate::schemas::XsDateTime;
 use xsd_parser::{
     models::schema::Namespace,
     quick_xml::{
@@ -1973,7 +1973,7 @@ impl WithDeserializer for WindsType {
 }
 pub type YearType = ::std::string::String;
 pub mod quick_xml_deserialize {
-    use crate::models::schemas::XsDateTime;
+    use crate::schemas::XsDateTime;
     use core::mem::replace;
     use xsd_parser::quick_xml::{
         filter_xmlns_attributes, BytesStart, ContentDeserializer, DeserializeReader, Deserializer,
