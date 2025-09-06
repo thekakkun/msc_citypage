@@ -15,11 +15,11 @@ use xsd_parser::{
 fn main() -> Result<(), Error> {
     let mut config = Config::default();
     config.parser.schemas = vec![
-        Schema::File("schemas/forecastFull.xsd".into()),
-        Schema::File("schemas/general.xsd".into()),
-        Schema::File("schemas/site.xsd".into()),
-        Schema::File("schemas/siteList.xsd".into()),
-        Schema::File("schemas/weather.xsd".into()),
+        Schema::File("schema_files/forecastFull.xsd".into()),
+        Schema::File("schema_files/general.xsd".into()),
+        Schema::File("schema_files/site.xsd".into()),
+        Schema::File("schema_files/siteList.xsd".into()),
+        Schema::File("schema_files/weather.xsd".into()),
     ];
     config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
     config.interpreter.types = vec![(
