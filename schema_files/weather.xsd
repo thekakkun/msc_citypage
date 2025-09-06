@@ -678,7 +678,7 @@
                 </xs:restriction>
             </xs:simpleType>
             <xs:simpleType>
-                <xs:restriction base="xs:integer">
+                <xs:restriction base="xs:float">
                     <xs:minInclusive value="0" />
                     <xs:maxInclusive value="360" />
                 </xs:restriction>

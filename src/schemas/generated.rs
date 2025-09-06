@@ -1542,7 +1542,7 @@ impl DeserializeBytes for ValidWindBearingUnitsType {
 #[derive(Debug)]
 pub enum ValidWindBearingsType {
     None,
-    I32(::core::primitive::i32),
+    F32(::core::primitive::f32),
 }
 impl DeserializeBytes for ValidWindBearingsType {
     fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
@@ -1551,7 +1551,7 @@ impl DeserializeBytes for ValidWindBearingsType {
     {
         match bytes {
             b"" => Ok(Self::None),
-            x => Ok(Self::I32(::core::primitive::i32::deserialize_bytes(
+            x => Ok(Self::F32(::core::primitive::f32::deserialize_bytes(
                 reader, x,
             )?)),
         }
