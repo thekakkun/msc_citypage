@@ -77,6 +77,9 @@ fn replace_variant_names(mut types: MetaTypes) -> MetaTypes {
                     "" => {
                         variant.display_name = Some("None".to_string());
                     }
+                    "Aujourd&apos;hui" => {
+                        variant.display_name = Some("AujourdHui".to_string());
+                    }
                     "ce soir et cette nuit" => {
                         variant.display_name = Some("ceSoirEtCetteNuit".to_string());
                     }
