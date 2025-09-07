@@ -262,11 +262,18 @@ impl WithDeserializer for HumidexHourlyType {
 }
 #[derive(Debug)]
 pub struct HumidexType {
-    pub text_summary: Option<::std::string::String>,
+    pub content: Option<HumidexTypeContent>,
+}
+#[derive(Debug)]
+pub struct HumidexTypeContent {
     pub calculated: Vec<CalculatedHumidexType>,
+    pub text_summary: ::std::string::String,
 }
 impl WithDeserializer for HumidexType {
     type Deserializer = quick_xml_deserialize::HumidexTypeDeserializer;
+}
+impl WithDeserializer for HumidexTypeContent {
+    type Deserializer = quick_xml_deserialize::HumidexTypeContentDeserializer;
 }
 #[derive(Debug)]
 pub struct IconCodeHourlyType {
@@ -1821,12 +1828,19 @@ impl WithDeserializer for WindChillHourlyType {
 }
 #[derive(Debug)]
 pub struct WindChillType {
-    pub text_summary: Option<::std::string::String>,
+    pub content: Option<WindChillTypeContent>,
+}
+#[derive(Debug)]
+pub struct WindChillTypeContent {
+    pub text_summary: ::std::string::String,
     pub calculated: Vec<CalculatedWindChillType>,
-    pub frostbite: Option<FrostbiteWindChillType>,
+    pub frostbite: FrostbiteWindChillType,
 }
 impl WithDeserializer for WindChillType {
     type Deserializer = quick_xml_deserialize::WindChillTypeDeserializer;
+}
+impl WithDeserializer for WindChillTypeContent {
+    type Deserializer = quick_xml_deserialize::WindChillTypeContentDeserializer;
 }
 #[derive(Debug)]
 pub enum WindDirFullType {
@@ -9037,16 +9051,14 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct HumidexTypeDeserializer {
-        text_summary: Option<::std::string::String>,
-        calculated: Vec<super::CalculatedHumidexType>,
+        content: Option<super::HumidexTypeContent>,
         state: Box<HumidexTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum HumidexTypeDeserializerState {
         Init__,
-        TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
-        Calculated(Option<<super::CalculatedHumidexType as WithDeserializer>::Deserializer>),
-        Done__,
+        Next__,
+        Content__(<super::HumidexTypeContent as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl HumidexTypeDeserializer {
@@ -9059,8 +9071,7 @@ pub mod quick_xml_deserialize {
                 reader.raise_unexpected_attrib_checked(attrib)?;
             }
             Ok(Self {
-                text_summary: None,
-                calculated: Vec::new(),
+                content: None,
                 state: Box::new(HumidexTypeDeserializerState::Init__),
             })
         }
@@ -9072,35 +9083,22 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            use HumidexTypeDeserializerState as S;
-            match state {
-                S::TextSummary(Some(deserializer)) => {
-                    self.store_text_summary(deserializer.finish(reader)?)?
-                }
-                S::Calculated(Some(deserializer)) => {
-                    self.store_calculated(deserializer.finish(reader)?)?
-                }
-                _ => (),
+            if let HumidexTypeDeserializerState::Content__(deserializer) = state {
+                self.store_content(deserializer.finish(reader)?)?;
             }
             Ok(())
         }
-        fn store_text_summary(&mut self, value: ::std::string::String) -> Result<(), Error> {
-            if self.text_summary.is_some() {
-                Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
-                    b"textSummary",
-                )))?;
+        fn store_content(&mut self, value: super::HumidexTypeContent) -> Result<(), Error> {
+            if self.content.is_some() {
+                Err(ErrorKind::DuplicateContent)?;
             }
-            self.text_summary = Some(value);
+            self.content = Some(value);
             Ok(())
         }
-        fn store_calculated(&mut self, value: super::CalculatedHumidexType) -> Result<(), Error> {
-            self.calculated.push(value);
-            Ok(())
-        }
-        fn handle_text_summary<'de, R>(
+        fn handle_content<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, ::std::string::String>,
+            output: DeserializerOutput<'de, super::HumidexTypeContent>,
             fallback: &mut Option<HumidexTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -9112,9 +9110,10 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                fallback.get_or_insert(HumidexTypeDeserializerState::TextSummary(None));
-                *self.state = HumidexTypeDeserializerState::Calculated(None);
-                return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                *self.state = fallback
+                    .take()
+                    .unwrap_or(HumidexTypeDeserializerState::Next__);
+                return Ok(ElementHandlerOutput::break_(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -9122,76 +9121,13 @@ pub mod quick_xml_deserialize {
             Ok(match artifact {
                 DeserializerArtifact::None => unreachable!(),
                 DeserializerArtifact::Data(data) => {
-                    self.store_text_summary(data)?;
-                    *self.state = HumidexTypeDeserializerState::Calculated(None);
+                    self.store_content(data)?;
+                    *self.state = HumidexTypeDeserializerState::Next__;
                     ElementHandlerOutput::from_event(event, allow_any)
                 }
                 DeserializerArtifact::Deserializer(deserializer) => {
-                    let ret = ElementHandlerOutput::from_event(event, allow_any);
-                    match &ret {
-                        ElementHandlerOutput::Continue { .. } => {
-                            fallback.get_or_insert(HumidexTypeDeserializerState::TextSummary(
-                                Some(deserializer),
-                            ));
-                            *self.state = HumidexTypeDeserializerState::Calculated(None);
-                        }
-                        ElementHandlerOutput::Break { .. } => {
-                            *self.state =
-                                HumidexTypeDeserializerState::TextSummary(Some(deserializer));
-                        }
-                    }
-                    ret
-                }
-            })
-        }
-        fn handle_calculated<'de, R>(
-            &mut self,
-            reader: &R,
-            output: DeserializerOutput<'de, super::CalculatedHumidexType>,
-            fallback: &mut Option<HumidexTypeDeserializerState>,
-        ) -> Result<ElementHandlerOutput<'de>, Error>
-        where
-            R: DeserializeReader,
-        {
-            let DeserializerOutput {
-                artifact,
-                event,
-                allow_any,
-            } = output;
-            if artifact.is_none() {
-                fallback.get_or_insert(HumidexTypeDeserializerState::Calculated(None));
-                *self.state = HumidexTypeDeserializerState::Done__;
-                return Ok(ElementHandlerOutput::from_event(event, allow_any));
-            }
-            if let Some(fallback) = fallback.take() {
-                self.finish_state(reader, fallback)?;
-            }
-            Ok(match artifact {
-                DeserializerArtifact::None => unreachable!(),
-                DeserializerArtifact::Data(data) => {
-                    self.store_calculated(data)?;
-                    if self.calculated.len() < 2usize {
-                        *self.state = HumidexTypeDeserializerState::Calculated(None);
-                    } else {
-                        *self.state = HumidexTypeDeserializerState::Done__;
-                    }
-                    ElementHandlerOutput::from_event(event, allow_any)
-                }
-                DeserializerArtifact::Deserializer(deserializer) => {
-                    let ret = ElementHandlerOutput::from_event(event, allow_any);
-                    match &ret {
-                        ElementHandlerOutput::Continue { .. } => {
-                            fallback.get_or_insert(HumidexTypeDeserializerState::Calculated(Some(
-                                deserializer,
-                            )));
-                            *self.state = HumidexTypeDeserializerState::Calculated(None);
-                        }
-                        ElementHandlerOutput::Break { .. } => {
-                            *self.state =
-                                HumidexTypeDeserializerState::Calculated(Some(deserializer));
-                        }
-                    }
-                    ret
+                    *self.state = HumidexTypeDeserializerState::Content__(deserializer);
+                    ElementHandlerOutput::from_event_end(event, allow_any)
                 }
             })
         }
@@ -9214,22 +9150,263 @@ pub mod quick_xml_deserialize {
             use HumidexTypeDeserializerState as S;
             let mut event = event;
             let mut fallback = None;
+            let (event, allow_any) = loop {
+                let state = replace(&mut *self.state, S::Unknown__);
+                event = match (state, event) {
+                    (S::Content__(deserializer), event) => {
+                        let output = deserializer.next(reader, event)?;
+                        match self.handle_content(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                            ElementHandlerOutput::Continue { event, .. } => event,
+                        }
+                    }
+                    (_, Event::End(_)) => {
+                        return Ok(DeserializerOutput {
+                            artifact: DeserializerArtifact::Data(self.finish(reader)?),
+                            event: DeserializerEvent::None,
+                            allow_any: false,
+                        });
+                    }
+                    (state @ (S::Init__ | S::Next__), event) => {
+                        fallback.get_or_insert(state);
+                        let output =
+                            <super::HumidexTypeContent as WithDeserializer>::Deserializer::init(
+                                reader, event,
+                            )?;
+                        match self.handle_content(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                            ElementHandlerOutput::Continue { event, .. } => event,
+                        }
+                    }
+                    (S::Unknown__, _) => unreachable!(),
+                }
+            };
+            let artifact = DeserializerArtifact::Deserializer(self);
+            Ok(DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            })
+        }
+        fn finish<R>(mut self, reader: &R) -> Result<super::HumidexType, Error>
+        where
+            R: DeserializeReader,
+        {
+            let state = replace(&mut *self.state, HumidexTypeDeserializerState::Unknown__);
+            self.finish_state(reader, state)?;
+            Ok(super::HumidexType {
+                content: self.content,
+            })
+        }
+    }
+    #[derive(Debug)]
+    pub struct HumidexTypeContentDeserializer {
+        calculated: Vec<super::CalculatedHumidexType>,
+        text_summary: Option<::std::string::String>,
+        state: Box<HumidexTypeContentDeserializerState>,
+    }
+    #[derive(Debug)]
+    enum HumidexTypeContentDeserializerState {
+        Init__,
+        Calculated(Option<<super::CalculatedHumidexType as WithDeserializer>::Deserializer>),
+        TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
+        Done__,
+        Unknown__,
+    }
+    impl HumidexTypeContentDeserializer {
+        fn finish_state<R>(
+            &mut self,
+            reader: &R,
+            state: HumidexTypeContentDeserializerState,
+        ) -> Result<(), Error>
+        where
+            R: DeserializeReader,
+        {
+            use HumidexTypeContentDeserializerState as S;
+            match state {
+                S::Calculated(Some(deserializer)) => {
+                    self.store_calculated(deserializer.finish(reader)?)?
+                }
+                S::TextSummary(Some(deserializer)) => {
+                    self.store_text_summary(deserializer.finish(reader)?)?
+                }
+                _ => (),
+            }
+            Ok(())
+        }
+        fn store_calculated(&mut self, value: super::CalculatedHumidexType) -> Result<(), Error> {
+            self.calculated.push(value);
+            Ok(())
+        }
+        fn store_text_summary(&mut self, value: ::std::string::String) -> Result<(), Error> {
+            if self.text_summary.is_some() {
+                Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
+                    b"textSummary",
+                )))?;
+            }
+            self.text_summary = Some(value);
+            Ok(())
+        }
+        fn handle_calculated<'de, R>(
+            &mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, super::CalculatedHumidexType>,
+            fallback: &mut Option<HumidexTypeContentDeserializerState>,
+        ) -> Result<ElementHandlerOutput<'de>, Error>
+        where
+            R: DeserializeReader,
+        {
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            if artifact.is_none() {
+                if self.calculated.len() < 1usize {
+                    *self.state = HumidexTypeContentDeserializerState::Calculated(None);
+                    return Ok(ElementHandlerOutput::break_(event, allow_any));
+                } else {
+                    fallback.get_or_insert(HumidexTypeContentDeserializerState::Calculated(None));
+                    *self.state = HumidexTypeContentDeserializerState::TextSummary(None);
+                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                }
+            }
+            if let Some(fallback) = fallback.take() {
+                self.finish_state(reader, fallback)?;
+            }
+            Ok(match artifact {
+                DeserializerArtifact::None => unreachable!(),
+                DeserializerArtifact::Data(data) => {
+                    self.store_calculated(data)?;
+                    if self.calculated.len() < 2usize {
+                        *self.state = HumidexTypeContentDeserializerState::Calculated(None);
+                    } else {
+                        *self.state = HumidexTypeContentDeserializerState::TextSummary(None);
+                    }
+                    ElementHandlerOutput::from_event(event, allow_any)
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    let ret = ElementHandlerOutput::from_event(event, allow_any);
+                    match &ret {
+                        ElementHandlerOutput::Continue { .. } => {
+                            fallback.get_or_insert(
+                                HumidexTypeContentDeserializerState::Calculated(Some(deserializer)),
+                            );
+                            if self.calculated.len().saturating_add(1) < 1usize {
+                                *self.state = HumidexTypeContentDeserializerState::Calculated(None);
+                            } else {
+                                *self.state =
+                                    HumidexTypeContentDeserializerState::TextSummary(None);
+                            }
+                        }
+                        ElementHandlerOutput::Break { .. } => {
+                            *self.state =
+                                HumidexTypeContentDeserializerState::Calculated(Some(deserializer));
+                        }
+                    }
+                    ret
+                }
+            })
+        }
+        fn handle_text_summary<'de, R>(
+            &mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, ::std::string::String>,
+            fallback: &mut Option<HumidexTypeContentDeserializerState>,
+        ) -> Result<ElementHandlerOutput<'de>, Error>
+        where
+            R: DeserializeReader,
+        {
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            if artifact.is_none() {
+                if self.text_summary.is_some() {
+                    fallback.get_or_insert(HumidexTypeContentDeserializerState::TextSummary(None));
+                    *self.state = HumidexTypeContentDeserializerState::Done__;
+                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                } else {
+                    *self.state = HumidexTypeContentDeserializerState::TextSummary(None);
+                    return Ok(ElementHandlerOutput::break_(event, allow_any));
+                }
+            }
+            if let Some(fallback) = fallback.take() {
+                self.finish_state(reader, fallback)?;
+            }
+            Ok(match artifact {
+                DeserializerArtifact::None => unreachable!(),
+                DeserializerArtifact::Data(data) => {
+                    self.store_text_summary(data)?;
+                    *self.state = HumidexTypeContentDeserializerState::Done__;
+                    ElementHandlerOutput::from_event(event, allow_any)
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    let ret = ElementHandlerOutput::from_event(event, allow_any);
+                    match &ret {
+                        ElementHandlerOutput::Continue { .. } => {
+                            fallback.get_or_insert(
+                                HumidexTypeContentDeserializerState::TextSummary(Some(
+                                    deserializer,
+                                )),
+                            );
+                            *self.state = HumidexTypeContentDeserializerState::Done__;
+                        }
+                        ElementHandlerOutput::Break { .. } => {
+                            *self.state = HumidexTypeContentDeserializerState::TextSummary(Some(
+                                deserializer,
+                            ));
+                        }
+                    }
+                    ret
+                }
+            })
+        }
+    }
+    impl<'de> Deserializer<'de, super::HumidexTypeContent> for HumidexTypeContentDeserializer {
+        fn init<R>(
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::HumidexTypeContent>
+        where
+            R: DeserializeReader,
+        {
+            let deserializer = Self {
+                calculated: Vec::new(),
+                text_summary: None,
+                state: Box::new(HumidexTypeContentDeserializerState::Init__),
+            };
+            let mut output = deserializer.next(reader, event)?;
+            output.artifact = match output.artifact {
+                DeserializerArtifact::Deserializer(x)
+                    if matches!(&*x.state, HumidexTypeContentDeserializerState::Init__) =>
+                {
+                    DeserializerArtifact::None
+                }
+                artifact => artifact,
+            };
+            Ok(output)
+        }
+        fn next<R>(
+            mut self,
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::HumidexTypeContent>
+        where
+            R: DeserializeReader,
+        {
+            use HumidexTypeContentDeserializerState as S;
+            let mut event = event;
+            let mut fallback = None;
             let mut allow_any_element = false;
             let (event, allow_any) = loop {
                 let state = replace(&mut *self.state, S::Unknown__);
                 event = match (state, event) {
-                    (S::TextSummary(Some(deserializer)), event) => {
-                        let output = deserializer.next(reader, event)?;
-                        match self.handle_text_summary(reader, output, &mut fallback)? {
-                            ElementHandlerOutput::Continue { event, allow_any } => {
-                                allow_any_element = allow_any_element || allow_any;
-                                event
-                            }
-                            ElementHandlerOutput::Break { event, allow_any } => {
-                                break (event, allow_any)
-                            }
-                        }
-                    }
                     (S::Calculated(Some(deserializer)), event) => {
                         let output = deserializer.next(reader, event)?;
                         match self.handle_calculated(reader, output, &mut fallback)? {
@@ -9242,28 +9419,8 @@ pub mod quick_xml_deserialize {
                             }
                         }
                     }
-                    (_, Event::End(_)) => {
-                        if let Some(fallback) = fallback.take() {
-                            self.finish_state(reader, fallback)?;
-                        }
-                        return Ok(DeserializerOutput {
-                            artifact: DeserializerArtifact::Data(self.finish(reader)?),
-                            event: DeserializerEvent::None,
-                            allow_any: false,
-                        });
-                    }
-                    (S::Init__, event) => {
-                        fallback.get_or_insert(S::Init__);
-                        *self.state = HumidexTypeDeserializerState::TextSummary(None);
-                        event
-                    }
-                    (S::TextSummary(None), event @ (Event::Start(_) | Event::Empty(_))) => {
-                        let output = reader.init_start_tag_deserializer(
-                            event,
-                            None,
-                            b"textSummary",
-                            false,
-                        )?;
+                    (S::TextSummary(Some(deserializer)), event) => {
+                        let output = deserializer.next(reader, event)?;
                         match self.handle_text_summary(reader, output, &mut fallback)? {
                             ElementHandlerOutput::Continue { event, allow_any } => {
                                 allow_any_element = allow_any_element || allow_any;
@@ -9274,6 +9431,21 @@ pub mod quick_xml_deserialize {
                             }
                         }
                     }
+                    (_, event @ Event::End(_)) => {
+                        if let Some(fallback) = fallback.take() {
+                            self.finish_state(reader, fallback)?;
+                        }
+                        return Ok(DeserializerOutput {
+                            artifact: DeserializerArtifact::Data(self.finish(reader)?),
+                            event: DeserializerEvent::Continue(event),
+                            allow_any: false,
+                        });
+                    }
+                    (S::Init__, event) => {
+                        fallback.get_or_insert(S::Init__);
+                        *self.state = HumidexTypeContentDeserializerState::Calculated(None);
+                        event
+                    }
                     (S::Calculated(None), event @ (Event::Start(_) | Event::Empty(_))) => {
                         let output = reader.init_start_tag_deserializer(
                             event,
@@ -9282,6 +9454,23 @@ pub mod quick_xml_deserialize {
                             false,
                         )?;
                         match self.handle_calculated(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Continue { event, allow_any } => {
+                                allow_any_element = allow_any_element || allow_any;
+                                event
+                            }
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                        }
+                    }
+                    (S::TextSummary(None), event @ (Event::Start(_) | Event::Empty(_))) => {
+                        let output = reader.init_start_tag_deserializer(
+                            event,
+                            None,
+                            b"textSummary",
+                            false,
+                        )?;
+                        match self.handle_text_summary(reader, output, &mut fallback)? {
                             ElementHandlerOutput::Continue { event, allow_any } => {
                                 allow_any_element = allow_any_element || allow_any;
                                 event
@@ -9311,15 +9500,20 @@ pub mod quick_xml_deserialize {
                 allow_any,
             })
         }
-        fn finish<R>(mut self, reader: &R) -> Result<super::HumidexType, Error>
+        fn finish<R>(mut self, reader: &R) -> Result<super::HumidexTypeContent, Error>
         where
             R: DeserializeReader,
         {
-            let state = replace(&mut *self.state, HumidexTypeDeserializerState::Unknown__);
+            let state = replace(
+                &mut *self.state,
+                HumidexTypeContentDeserializerState::Unknown__,
+            );
             self.finish_state(reader, state)?;
-            Ok(super::HumidexType {
-                text_summary: self.text_summary,
+            Ok(super::HumidexTypeContent {
                 calculated: self.calculated,
+                text_summary: self
+                    .text_summary
+                    .ok_or_else(|| ErrorKind::MissingElement("textSummary".into()))?,
             })
         }
     }
@@ -18448,18 +18642,14 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct WindChillTypeDeserializer {
-        text_summary: Option<::std::string::String>,
-        calculated: Vec<super::CalculatedWindChillType>,
-        frostbite: Option<super::FrostbiteWindChillType>,
+        content: Option<super::WindChillTypeContent>,
         state: Box<WindChillTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum WindChillTypeDeserializerState {
         Init__,
-        TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
-        Calculated(Option<<super::CalculatedWindChillType as WithDeserializer>::Deserializer>),
-        Frostbite(Option<<super::FrostbiteWindChillType as WithDeserializer>::Deserializer>),
-        Done__,
+        Next__,
+        Content__(<super::WindChillTypeContent as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl WindChillTypeDeserializer {
@@ -18472,9 +18662,7 @@ pub mod quick_xml_deserialize {
                 reader.raise_unexpected_attrib_checked(attrib)?;
             }
             Ok(Self {
-                text_summary: None,
-                calculated: Vec::new(),
-                frostbite: None,
+                content: None,
                 state: Box::new(WindChillTypeDeserializerState::Init__),
             })
         }
@@ -18486,7 +18674,152 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
+            if let WindChillTypeDeserializerState::Content__(deserializer) = state {
+                self.store_content(deserializer.finish(reader)?)?;
+            }
+            Ok(())
+        }
+        fn store_content(&mut self, value: super::WindChillTypeContent) -> Result<(), Error> {
+            if self.content.is_some() {
+                Err(ErrorKind::DuplicateContent)?;
+            }
+            self.content = Some(value);
+            Ok(())
+        }
+        fn handle_content<'de, R>(
+            &mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, super::WindChillTypeContent>,
+            fallback: &mut Option<WindChillTypeDeserializerState>,
+        ) -> Result<ElementHandlerOutput<'de>, Error>
+        where
+            R: DeserializeReader,
+        {
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            if artifact.is_none() {
+                *self.state = fallback
+                    .take()
+                    .unwrap_or(WindChillTypeDeserializerState::Next__);
+                return Ok(ElementHandlerOutput::break_(event, allow_any));
+            }
+            if let Some(fallback) = fallback.take() {
+                self.finish_state(reader, fallback)?;
+            }
+            Ok(match artifact {
+                DeserializerArtifact::None => unreachable!(),
+                DeserializerArtifact::Data(data) => {
+                    self.store_content(data)?;
+                    *self.state = WindChillTypeDeserializerState::Next__;
+                    ElementHandlerOutput::from_event(event, allow_any)
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    *self.state = WindChillTypeDeserializerState::Content__(deserializer);
+                    ElementHandlerOutput::from_event_end(event, allow_any)
+                }
+            })
+        }
+    }
+    impl<'de> Deserializer<'de, super::WindChillType> for WindChillTypeDeserializer {
+        fn init<R>(reader: &R, event: Event<'de>) -> DeserializerResult<'de, super::WindChillType>
+        where
+            R: DeserializeReader,
+        {
+            reader.init_deserializer_from_start_event(event, Self::from_bytes_start)
+        }
+        fn next<R>(
+            mut self,
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::WindChillType>
+        where
+            R: DeserializeReader,
+        {
             use WindChillTypeDeserializerState as S;
+            let mut event = event;
+            let mut fallback = None;
+            let (event, allow_any) = loop {
+                let state = replace(&mut *self.state, S::Unknown__);
+                event = match (state, event) {
+                    (S::Content__(deserializer), event) => {
+                        let output = deserializer.next(reader, event)?;
+                        match self.handle_content(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                            ElementHandlerOutput::Continue { event, .. } => event,
+                        }
+                    }
+                    (_, Event::End(_)) => {
+                        return Ok(DeserializerOutput {
+                            artifact: DeserializerArtifact::Data(self.finish(reader)?),
+                            event: DeserializerEvent::None,
+                            allow_any: false,
+                        });
+                    }
+                    (state @ (S::Init__ | S::Next__), event) => {
+                        fallback.get_or_insert(state);
+                        let output =
+                            <super::WindChillTypeContent as WithDeserializer>::Deserializer::init(
+                                reader, event,
+                            )?;
+                        match self.handle_content(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                            ElementHandlerOutput::Continue { event, .. } => event,
+                        }
+                    }
+                    (S::Unknown__, _) => unreachable!(),
+                }
+            };
+            let artifact = DeserializerArtifact::Deserializer(self);
+            Ok(DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            })
+        }
+        fn finish<R>(mut self, reader: &R) -> Result<super::WindChillType, Error>
+        where
+            R: DeserializeReader,
+        {
+            let state = replace(&mut *self.state, WindChillTypeDeserializerState::Unknown__);
+            self.finish_state(reader, state)?;
+            Ok(super::WindChillType {
+                content: self.content,
+            })
+        }
+    }
+    #[derive(Debug)]
+    pub struct WindChillTypeContentDeserializer {
+        text_summary: Option<::std::string::String>,
+        calculated: Vec<super::CalculatedWindChillType>,
+        frostbite: Option<super::FrostbiteWindChillType>,
+        state: Box<WindChillTypeContentDeserializerState>,
+    }
+    #[derive(Debug)]
+    enum WindChillTypeContentDeserializerState {
+        Init__,
+        TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
+        Calculated(Option<<super::CalculatedWindChillType as WithDeserializer>::Deserializer>),
+        Frostbite(Option<<super::FrostbiteWindChillType as WithDeserializer>::Deserializer>),
+        Done__,
+        Unknown__,
+    }
+    impl WindChillTypeContentDeserializer {
+        fn finish_state<R>(
+            &mut self,
+            reader: &R,
+            state: WindChillTypeContentDeserializerState,
+        ) -> Result<(), Error>
+        where
+            R: DeserializeReader,
+        {
+            use WindChillTypeContentDeserializerState as S;
             match state {
                 S::TextSummary(Some(deserializer)) => {
                     self.store_text_summary(deserializer.finish(reader)?)?
@@ -18527,7 +18860,7 @@ pub mod quick_xml_deserialize {
             &mut self,
             reader: &R,
             output: DeserializerOutput<'de, ::std::string::String>,
-            fallback: &mut Option<WindChillTypeDeserializerState>,
+            fallback: &mut Option<WindChillTypeContentDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
             R: DeserializeReader,
@@ -18538,9 +18871,15 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                fallback.get_or_insert(WindChillTypeDeserializerState::TextSummary(None));
-                *self.state = WindChillTypeDeserializerState::Calculated(None);
-                return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                if self.text_summary.is_some() {
+                    fallback
+                        .get_or_insert(WindChillTypeContentDeserializerState::TextSummary(None));
+                    *self.state = WindChillTypeContentDeserializerState::Calculated(None);
+                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                } else {
+                    *self.state = WindChillTypeContentDeserializerState::TextSummary(None);
+                    return Ok(ElementHandlerOutput::break_(event, allow_any));
+                }
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -18549,21 +18888,24 @@ pub mod quick_xml_deserialize {
                 DeserializerArtifact::None => unreachable!(),
                 DeserializerArtifact::Data(data) => {
                     self.store_text_summary(data)?;
-                    *self.state = WindChillTypeDeserializerState::Calculated(None);
+                    *self.state = WindChillTypeContentDeserializerState::Calculated(None);
                     ElementHandlerOutput::from_event(event, allow_any)
                 }
                 DeserializerArtifact::Deserializer(deserializer) => {
                     let ret = ElementHandlerOutput::from_event(event, allow_any);
                     match &ret {
                         ElementHandlerOutput::Continue { .. } => {
-                            fallback.get_or_insert(WindChillTypeDeserializerState::TextSummary(
-                                Some(deserializer),
-                            ));
-                            *self.state = WindChillTypeDeserializerState::Calculated(None);
+                            fallback.get_or_insert(
+                                WindChillTypeContentDeserializerState::TextSummary(Some(
+                                    deserializer,
+                                )),
+                            );
+                            *self.state = WindChillTypeContentDeserializerState::Calculated(None);
                         }
                         ElementHandlerOutput::Break { .. } => {
-                            *self.state =
-                                WindChillTypeDeserializerState::TextSummary(Some(deserializer));
+                            *self.state = WindChillTypeContentDeserializerState::TextSummary(Some(
+                                deserializer,
+                            ));
                         }
                     }
                     ret
@@ -18574,7 +18916,7 @@ pub mod quick_xml_deserialize {
             &mut self,
             reader: &R,
             output: DeserializerOutput<'de, super::CalculatedWindChillType>,
-            fallback: &mut Option<WindChillTypeDeserializerState>,
+            fallback: &mut Option<WindChillTypeContentDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
             R: DeserializeReader,
@@ -18585,9 +18927,14 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                fallback.get_or_insert(WindChillTypeDeserializerState::Calculated(None));
-                *self.state = WindChillTypeDeserializerState::Frostbite(None);
-                return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                if self.calculated.len() < 1usize {
+                    *self.state = WindChillTypeContentDeserializerState::Calculated(None);
+                    return Ok(ElementHandlerOutput::break_(event, allow_any));
+                } else {
+                    fallback.get_or_insert(WindChillTypeContentDeserializerState::Calculated(None));
+                    *self.state = WindChillTypeContentDeserializerState::Frostbite(None);
+                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                }
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -18597,9 +18944,9 @@ pub mod quick_xml_deserialize {
                 DeserializerArtifact::Data(data) => {
                     self.store_calculated(data)?;
                     if self.calculated.len() < 2usize {
-                        *self.state = WindChillTypeDeserializerState::Calculated(None);
+                        *self.state = WindChillTypeContentDeserializerState::Calculated(None);
                     } else {
-                        *self.state = WindChillTypeDeserializerState::Frostbite(None);
+                        *self.state = WindChillTypeContentDeserializerState::Frostbite(None);
                     }
                     ElementHandlerOutput::from_event(event, allow_any)
                 }
@@ -18607,14 +18954,23 @@ pub mod quick_xml_deserialize {
                     let ret = ElementHandlerOutput::from_event(event, allow_any);
                     match &ret {
                         ElementHandlerOutput::Continue { .. } => {
-                            fallback.get_or_insert(WindChillTypeDeserializerState::Calculated(
-                                Some(deserializer),
-                            ));
-                            *self.state = WindChillTypeDeserializerState::Calculated(None);
+                            fallback.get_or_insert(
+                                WindChillTypeContentDeserializerState::Calculated(Some(
+                                    deserializer,
+                                )),
+                            );
+                            if self.calculated.len().saturating_add(1) < 1usize {
+                                *self.state =
+                                    WindChillTypeContentDeserializerState::Calculated(None);
+                            } else {
+                                *self.state =
+                                    WindChillTypeContentDeserializerState::Frostbite(None);
+                            }
                         }
                         ElementHandlerOutput::Break { .. } => {
-                            *self.state =
-                                WindChillTypeDeserializerState::Calculated(Some(deserializer));
+                            *self.state = WindChillTypeContentDeserializerState::Calculated(Some(
+                                deserializer,
+                            ));
                         }
                     }
                     ret
@@ -18625,7 +18981,7 @@ pub mod quick_xml_deserialize {
             &mut self,
             reader: &R,
             output: DeserializerOutput<'de, super::FrostbiteWindChillType>,
-            fallback: &mut Option<WindChillTypeDeserializerState>,
+            fallback: &mut Option<WindChillTypeContentDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
             R: DeserializeReader,
@@ -18636,9 +18992,14 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                fallback.get_or_insert(WindChillTypeDeserializerState::Frostbite(None));
-                *self.state = WindChillTypeDeserializerState::Done__;
-                return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                if self.frostbite.is_some() {
+                    fallback.get_or_insert(WindChillTypeContentDeserializerState::Frostbite(None));
+                    *self.state = WindChillTypeContentDeserializerState::Done__;
+                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                } else {
+                    *self.state = WindChillTypeContentDeserializerState::Frostbite(None);
+                    return Ok(ElementHandlerOutput::break_(event, allow_any));
+                }
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -18647,21 +19008,24 @@ pub mod quick_xml_deserialize {
                 DeserializerArtifact::None => unreachable!(),
                 DeserializerArtifact::Data(data) => {
                     self.store_frostbite(data)?;
-                    *self.state = WindChillTypeDeserializerState::Done__;
+                    *self.state = WindChillTypeContentDeserializerState::Done__;
                     ElementHandlerOutput::from_event(event, allow_any)
                 }
                 DeserializerArtifact::Deserializer(deserializer) => {
                     let ret = ElementHandlerOutput::from_event(event, allow_any);
                     match &ret {
                         ElementHandlerOutput::Continue { .. } => {
-                            fallback.get_or_insert(WindChillTypeDeserializerState::Frostbite(
-                                Some(deserializer),
-                            ));
-                            *self.state = WindChillTypeDeserializerState::Done__;
+                            fallback.get_or_insert(
+                                WindChillTypeContentDeserializerState::Frostbite(Some(
+                                    deserializer,
+                                )),
+                            );
+                            *self.state = WindChillTypeContentDeserializerState::Done__;
                         }
                         ElementHandlerOutput::Break { .. } => {
-                            *self.state =
-                                WindChillTypeDeserializerState::Frostbite(Some(deserializer));
+                            *self.state = WindChillTypeContentDeserializerState::Frostbite(Some(
+                                deserializer,
+                            ));
                         }
                     }
                     ret
@@ -18669,22 +19033,40 @@ pub mod quick_xml_deserialize {
             })
         }
     }
-    impl<'de> Deserializer<'de, super::WindChillType> for WindChillTypeDeserializer {
-        fn init<R>(reader: &R, event: Event<'de>) -> DeserializerResult<'de, super::WindChillType>
+    impl<'de> Deserializer<'de, super::WindChillTypeContent> for WindChillTypeContentDeserializer {
+        fn init<R>(
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::WindChillTypeContent>
         where
             R: DeserializeReader,
         {
-            reader.init_deserializer_from_start_event(event, Self::from_bytes_start)
+            let deserializer = Self {
+                text_summary: None,
+                calculated: Vec::new(),
+                frostbite: None,
+                state: Box::new(WindChillTypeContentDeserializerState::Init__),
+            };
+            let mut output = deserializer.next(reader, event)?;
+            output.artifact = match output.artifact {
+                DeserializerArtifact::Deserializer(x)
+                    if matches!(&*x.state, WindChillTypeContentDeserializerState::Init__) =>
+                {
+                    DeserializerArtifact::None
+                }
+                artifact => artifact,
+            };
+            Ok(output)
         }
         fn next<R>(
             mut self,
             reader: &R,
             event: Event<'de>,
-        ) -> DeserializerResult<'de, super::WindChillType>
+        ) -> DeserializerResult<'de, super::WindChillTypeContent>
         where
             R: DeserializeReader,
         {
-            use WindChillTypeDeserializerState as S;
+            use WindChillTypeContentDeserializerState as S;
             let mut event = event;
             let mut fallback = None;
             let mut allow_any_element = false;
@@ -18727,19 +19109,19 @@ pub mod quick_xml_deserialize {
                             }
                         }
                     }
-                    (_, Event::End(_)) => {
+                    (_, event @ Event::End(_)) => {
                         if let Some(fallback) = fallback.take() {
                             self.finish_state(reader, fallback)?;
                         }
                         return Ok(DeserializerOutput {
                             artifact: DeserializerArtifact::Data(self.finish(reader)?),
-                            event: DeserializerEvent::None,
+                            event: DeserializerEvent::Continue(event),
                             allow_any: false,
                         });
                     }
                     (S::Init__, event) => {
                         fallback.get_or_insert(S::Init__);
-                        *self.state = WindChillTypeDeserializerState::TextSummary(None);
+                        *self.state = WindChillTypeContentDeserializerState::TextSummary(None);
                         event
                     }
                     (S::TextSummary(None), event @ (Event::Start(_) | Event::Empty(_))) => {
@@ -18809,16 +19191,23 @@ pub mod quick_xml_deserialize {
                 allow_any,
             })
         }
-        fn finish<R>(mut self, reader: &R) -> Result<super::WindChillType, Error>
+        fn finish<R>(mut self, reader: &R) -> Result<super::WindChillTypeContent, Error>
         where
             R: DeserializeReader,
         {
-            let state = replace(&mut *self.state, WindChillTypeDeserializerState::Unknown__);
+            let state = replace(
+                &mut *self.state,
+                WindChillTypeContentDeserializerState::Unknown__,
+            );
             self.finish_state(reader, state)?;
-            Ok(super::WindChillType {
-                text_summary: self.text_summary,
+            Ok(super::WindChillTypeContent {
+                text_summary: self
+                    .text_summary
+                    .ok_or_else(|| ErrorKind::MissingElement("textSummary".into()))?,
                 calculated: self.calculated,
-                frostbite: self.frostbite,
+                frostbite: self
+                    .frostbite
+                    .ok_or_else(|| ErrorKind::MissingElement("frostbite".into()))?,
             })
         }
     }

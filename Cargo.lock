@@ -1511,7 +1511,6 @@ dependencies = [
  "futures-util",
  "hostname",
  "lapin",
- "proc-macro2",
  "quick-xml",
  "quote",
  "reqwest",
