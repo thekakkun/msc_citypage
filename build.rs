@@ -26,13 +26,13 @@ fn main() -> Result<(), Error> {
         (
             IdentTriple::from((IdentType::Type, "timeStampType")),
             MetaType::from(
-                CustomMeta::new("XsDateTime").include_from("crate::schemas::XsDateTime"),
+                CustomMeta::new("TimeStampType").include_from("crate::schemas::TimeStampType"),
             ),
         ),
         (
-            IdentTriple::from((IdentType::Attribute, "dateTimeUTC")),
+            IdentTriple::from((IdentType::Type, "dateTimeUTCType")),
             MetaType::from(
-                CustomMeta::new("XsDateTime").include_from("crate::schemas::XsDateTime"),
+                CustomMeta::new("DateTimeUtcType").include_from("crate::schemas::DateTimeUtcType"),
             ),
         ),
     ];

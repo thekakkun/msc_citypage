@@ -1,4 +1,4 @@
-use crate::schemas::XsDateTime;
+use crate::schemas::{DateTimeUtcType, TimeStampType};
 use xsd_parser::{
     models::schema::Namespace,
     quick_xml::{
@@ -147,13 +147,12 @@ pub struct DateStampType {
     pub day: DayType,
     pub hour: HourType,
     pub minute: MinuteType,
-    pub time_stamp: XsDateTime,
+    pub time_stamp: TimeStampType,
     pub text_summary: ::std::string::String,
 }
 impl WithDeserializer for DateStampType {
     type Deserializer = quick_xml_deserialize::DateStampTypeDeserializer;
 }
-pub type DateTimeUtcType = ::core::primitive::i32;
 #[derive(Debug)]
 pub struct DayType {
     pub name: ValidDayNamesType,
@@ -240,7 +239,7 @@ impl WithDeserializer for HourlyForecastGroupTypeFullType {
 }
 #[derive(Debug)]
 pub struct HourlyForecastTypeFullType {
-    pub date_time_utc: Option<::core::primitive::i32>,
+    pub date_time_utc: Option<DateTimeUtcType>,
     pub condition: xs::AnyType,
     pub icon_code: IconCodeHourlyType,
     pub temperature: TemperatureHourlyType,
@@ -248,7 +247,7 @@ pub struct HourlyForecastTypeFullType {
     pub wind_chill: WindChillHourlyType,
     pub humidex: HumidexHourlyType,
     pub wind: WindHourlyType,
-    pub uv: UvHourlyType,
+    pub uv: Option<UvHourlyType>,
 }
 impl WithDeserializer for HourlyForecastTypeFullType {
     type Deserializer = quick_xml_deserialize::HourlyForecastTypeFullTypeDeserializer;
@@ -663,10 +662,17 @@ impl DeserializeBytes for UvCategoryType {
 }
 #[derive(Debug)]
 pub struct UvHourlyType {
+    pub content: Option<UvHourlyTypeContent>,
+}
+#[derive(Debug)]
+pub struct UvHourlyTypeContent {
     pub index: UvIndexType,
 }
 impl WithDeserializer for UvHourlyType {
     type Deserializer = quick_xml_deserialize::UvHourlyTypeDeserializer;
+}
+impl WithDeserializer for UvHourlyTypeContent {
+    type Deserializer = quick_xml_deserialize::UvHourlyTypeContentDeserializer;
 }
 #[derive(Debug)]
 pub enum UvIndexType {
@@ -1788,7 +1794,7 @@ pub struct WarningEventType {
     pub type_: Option<ValidWarningTypesType>,
     pub description: Option<::std::string::String>,
     pub priority: Option<ValidWarningPrioritiesType>,
-    pub expiry_time: Option<XsDateTime>,
+    pub expiry_time: Option<TimeStampType>,
     pub url: Option<::std::string::String>,
     pub date_time: [DateStampType; 2usize],
 }
@@ -1961,7 +1967,7 @@ impl WithDeserializer for WindsType {
 }
 pub type YearType = ::std::string::String;
 pub mod quick_xml_deserialize {
-    use crate::schemas::XsDateTime;
+    use crate::schemas::{DateTimeUtcType, TimeStampType};
     use core::mem::replace;
     use xsd_parser::quick_xml::{
         filter_xmlns_attributes, BytesStart, ContentDeserializer, DeserializeReader, Deserializer,
@@ -4549,7 +4555,7 @@ pub mod quick_xml_deserialize {
         day: Option<super::DayType>,
         hour: Option<super::HourType>,
         minute: Option<super::MinuteType>,
-        time_stamp: Option<XsDateTime>,
+        time_stamp: Option<TimeStampType>,
         text_summary: Option<::std::string::String>,
         state: Box<DateStampTypeDeserializerState>,
     }
@@ -4561,7 +4567,7 @@ pub mod quick_xml_deserialize {
         Day(Option<<super::DayType as WithDeserializer>::Deserializer>),
         Hour(Option<<super::HourType as WithDeserializer>::Deserializer>),
         Minute(Option<<super::MinuteType as WithDeserializer>::Deserializer>),
-        TimeStamp(Option<<XsDateTime as WithDeserializer>::Deserializer>),
+        TimeStamp(Option<<TimeStampType as WithDeserializer>::Deserializer>),
         TextSummary(Option<<::std::string::String as WithDeserializer>::Deserializer>),
         Done__,
         Unknown__,
@@ -4664,7 +4670,7 @@ pub mod quick_xml_deserialize {
             self.minute = Some(value);
             Ok(())
         }
-        fn store_time_stamp(&mut self, value: XsDateTime) -> Result<(), Error> {
+        fn store_time_stamp(&mut self, value: TimeStampType) -> Result<(), Error> {
             if self.time_stamp.is_some() {
                 Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
                     b"timeStamp",
@@ -4941,7 +4947,7 @@ pub mod quick_xml_deserialize {
         fn handle_time_stamp<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, XsDateTime>,
+            output: DeserializerOutput<'de, TimeStampType>,
             fallback: &mut Option<DateStampTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -7994,7 +8000,7 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct HourlyForecastTypeFullTypeDeserializer {
-        date_time_utc: Option<::core::primitive::i32>,
+        date_time_utc: Option<DateTimeUtcType>,
         condition: Option<super::xs::AnyType>,
         icon_code: Option<super::IconCodeHourlyType>,
         temperature: Option<super::TemperatureHourlyType>,
@@ -8024,7 +8030,7 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            let mut date_time_utc: Option<::core::primitive::i32> = None;
+            let mut date_time_utc: Option<DateTimeUtcType> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;
                 if attrib.key.local_name().as_ref() == b"dateTimeUTC" {
@@ -8556,14 +8562,9 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.uv.is_some() {
-                    fallback.get_or_insert(HourlyForecastTypeFullTypeDeserializerState::Uv(None));
-                    *self.state = HourlyForecastTypeFullTypeDeserializerState::Done__;
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                } else {
-                    *self.state = HourlyForecastTypeFullTypeDeserializerState::Uv(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                }
+                fallback.get_or_insert(HourlyForecastTypeFullTypeDeserializerState::Uv(None));
+                *self.state = HourlyForecastTypeFullTypeDeserializerState::Done__;
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -8892,9 +8893,7 @@ pub mod quick_xml_deserialize {
                 wind: self
                     .wind
                     .ok_or_else(|| ErrorKind::MissingElement("wind".into()))?,
-                uv: self
-                    .uv
-                    .ok_or_else(|| ErrorKind::MissingElement("uv".into()))?,
+                uv: self.uv,
             })
         }
     }
@@ -16373,14 +16372,14 @@ pub mod quick_xml_deserialize {
     }
     #[derive(Debug)]
     pub struct UvHourlyTypeDeserializer {
-        index: Option<super::UvIndexType>,
+        content: Option<super::UvHourlyTypeContent>,
         state: Box<UvHourlyTypeDeserializerState>,
     }
     #[derive(Debug)]
     enum UvHourlyTypeDeserializerState {
         Init__,
-        Index(Option<<super::UvIndexType as WithDeserializer>::Deserializer>),
-        Done__,
+        Next__,
+        Content__(<super::UvHourlyTypeContent as WithDeserializer>::Deserializer),
         Unknown__,
     }
     impl UvHourlyTypeDeserializer {
@@ -16393,7 +16392,7 @@ pub mod quick_xml_deserialize {
                 reader.raise_unexpected_attrib_checked(attrib)?;
             }
             Ok(Self {
-                index: None,
+                content: None,
                 state: Box::new(UvHourlyTypeDeserializerState::Init__),
             })
         }
@@ -16405,26 +16404,22 @@ pub mod quick_xml_deserialize {
         where
             R: DeserializeReader,
         {
-            use UvHourlyTypeDeserializerState as S;
-            match state {
-                S::Index(Some(deserializer)) => self.store_index(deserializer.finish(reader)?)?,
-                _ => (),
+            if let UvHourlyTypeDeserializerState::Content__(deserializer) = state {
+                self.store_content(deserializer.finish(reader)?)?;
             }
             Ok(())
         }
-        fn store_index(&mut self, value: super::UvIndexType) -> Result<(), Error> {
-            if self.index.is_some() {
-                Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
-                    b"index",
-                )))?;
+        fn store_content(&mut self, value: super::UvHourlyTypeContent) -> Result<(), Error> {
+            if self.content.is_some() {
+                Err(ErrorKind::DuplicateContent)?;
             }
-            self.index = Some(value);
+            self.content = Some(value);
             Ok(())
         }
-        fn handle_index<'de, R>(
+        fn handle_content<'de, R>(
             &mut self,
             reader: &R,
-            output: DeserializerOutput<'de, super::UvIndexType>,
+            output: DeserializerOutput<'de, super::UvHourlyTypeContent>,
             fallback: &mut Option<UvHourlyTypeDeserializerState>,
         ) -> Result<ElementHandlerOutput<'de>, Error>
         where
@@ -16436,14 +16431,10 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.index.is_some() {
-                    fallback.get_or_insert(UvHourlyTypeDeserializerState::Index(None));
-                    *self.state = UvHourlyTypeDeserializerState::Done__;
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                } else {
-                    *self.state = UvHourlyTypeDeserializerState::Index(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                }
+                *self.state = fallback
+                    .take()
+                    .unwrap_or(UvHourlyTypeDeserializerState::Next__);
+                return Ok(ElementHandlerOutput::break_(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -16451,24 +16442,13 @@ pub mod quick_xml_deserialize {
             Ok(match artifact {
                 DeserializerArtifact::None => unreachable!(),
                 DeserializerArtifact::Data(data) => {
-                    self.store_index(data)?;
-                    *self.state = UvHourlyTypeDeserializerState::Done__;
+                    self.store_content(data)?;
+                    *self.state = UvHourlyTypeDeserializerState::Next__;
                     ElementHandlerOutput::from_event(event, allow_any)
                 }
                 DeserializerArtifact::Deserializer(deserializer) => {
-                    let ret = ElementHandlerOutput::from_event(event, allow_any);
-                    match &ret {
-                        ElementHandlerOutput::Continue { .. } => {
-                            fallback.get_or_insert(UvHourlyTypeDeserializerState::Index(Some(
-                                deserializer,
-                            )));
-                            *self.state = UvHourlyTypeDeserializerState::Done__;
-                        }
-                        ElementHandlerOutput::Break { .. } => {
-                            *self.state = UvHourlyTypeDeserializerState::Index(Some(deserializer));
-                        }
-                    }
-                    ret
+                    *self.state = UvHourlyTypeDeserializerState::Content__(deserializer);
+                    ElementHandlerOutput::from_event_end(event, allow_any)
                 }
             })
         }
@@ -16491,6 +16471,183 @@ pub mod quick_xml_deserialize {
             use UvHourlyTypeDeserializerState as S;
             let mut event = event;
             let mut fallback = None;
+            let (event, allow_any) = loop {
+                let state = replace(&mut *self.state, S::Unknown__);
+                event = match (state, event) {
+                    (S::Content__(deserializer), event) => {
+                        let output = deserializer.next(reader, event)?;
+                        match self.handle_content(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                            ElementHandlerOutput::Continue { event, .. } => event,
+                        }
+                    }
+                    (_, Event::End(_)) => {
+                        return Ok(DeserializerOutput {
+                            artifact: DeserializerArtifact::Data(self.finish(reader)?),
+                            event: DeserializerEvent::None,
+                            allow_any: false,
+                        });
+                    }
+                    (state @ (S::Init__ | S::Next__), event) => {
+                        fallback.get_or_insert(state);
+                        let output =
+                            <super::UvHourlyTypeContent as WithDeserializer>::Deserializer::init(
+                                reader, event,
+                            )?;
+                        match self.handle_content(reader, output, &mut fallback)? {
+                            ElementHandlerOutput::Break { event, allow_any } => {
+                                break (event, allow_any)
+                            }
+                            ElementHandlerOutput::Continue { event, .. } => event,
+                        }
+                    }
+                    (S::Unknown__, _) => unreachable!(),
+                }
+            };
+            let artifact = DeserializerArtifact::Deserializer(self);
+            Ok(DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            })
+        }
+        fn finish<R>(mut self, reader: &R) -> Result<super::UvHourlyType, Error>
+        where
+            R: DeserializeReader,
+        {
+            let state = replace(&mut *self.state, UvHourlyTypeDeserializerState::Unknown__);
+            self.finish_state(reader, state)?;
+            Ok(super::UvHourlyType {
+                content: self.content,
+            })
+        }
+    }
+    #[derive(Debug)]
+    pub struct UvHourlyTypeContentDeserializer {
+        index: Option<super::UvIndexType>,
+        state: Box<UvHourlyTypeContentDeserializerState>,
+    }
+    #[derive(Debug)]
+    enum UvHourlyTypeContentDeserializerState {
+        Init__,
+        Index(Option<<super::UvIndexType as WithDeserializer>::Deserializer>),
+        Done__,
+        Unknown__,
+    }
+    impl UvHourlyTypeContentDeserializer {
+        fn finish_state<R>(
+            &mut self,
+            reader: &R,
+            state: UvHourlyTypeContentDeserializerState,
+        ) -> Result<(), Error>
+        where
+            R: DeserializeReader,
+        {
+            use UvHourlyTypeContentDeserializerState as S;
+            match state {
+                S::Index(Some(deserializer)) => self.store_index(deserializer.finish(reader)?)?,
+                _ => (),
+            }
+            Ok(())
+        }
+        fn store_index(&mut self, value: super::UvIndexType) -> Result<(), Error> {
+            if self.index.is_some() {
+                Err(ErrorKind::DuplicateElement(RawByteStr::from_slice(
+                    b"index",
+                )))?;
+            }
+            self.index = Some(value);
+            Ok(())
+        }
+        fn handle_index<'de, R>(
+            &mut self,
+            reader: &R,
+            output: DeserializerOutput<'de, super::UvIndexType>,
+            fallback: &mut Option<UvHourlyTypeContentDeserializerState>,
+        ) -> Result<ElementHandlerOutput<'de>, Error>
+        where
+            R: DeserializeReader,
+        {
+            let DeserializerOutput {
+                artifact,
+                event,
+                allow_any,
+            } = output;
+            if artifact.is_none() {
+                if self.index.is_some() {
+                    fallback.get_or_insert(UvHourlyTypeContentDeserializerState::Index(None));
+                    *self.state = UvHourlyTypeContentDeserializerState::Done__;
+                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
+                } else {
+                    *self.state = UvHourlyTypeContentDeserializerState::Index(None);
+                    return Ok(ElementHandlerOutput::break_(event, allow_any));
+                }
+            }
+            if let Some(fallback) = fallback.take() {
+                self.finish_state(reader, fallback)?;
+            }
+            Ok(match artifact {
+                DeserializerArtifact::None => unreachable!(),
+                DeserializerArtifact::Data(data) => {
+                    self.store_index(data)?;
+                    *self.state = UvHourlyTypeContentDeserializerState::Done__;
+                    ElementHandlerOutput::from_event(event, allow_any)
+                }
+                DeserializerArtifact::Deserializer(deserializer) => {
+                    let ret = ElementHandlerOutput::from_event(event, allow_any);
+                    match &ret {
+                        ElementHandlerOutput::Continue { .. } => {
+                            fallback.get_or_insert(UvHourlyTypeContentDeserializerState::Index(
+                                Some(deserializer),
+                            ));
+                            *self.state = UvHourlyTypeContentDeserializerState::Done__;
+                        }
+                        ElementHandlerOutput::Break { .. } => {
+                            *self.state =
+                                UvHourlyTypeContentDeserializerState::Index(Some(deserializer));
+                        }
+                    }
+                    ret
+                }
+            })
+        }
+    }
+    impl<'de> Deserializer<'de, super::UvHourlyTypeContent> for UvHourlyTypeContentDeserializer {
+        fn init<R>(
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::UvHourlyTypeContent>
+        where
+            R: DeserializeReader,
+        {
+            let deserializer = Self {
+                index: None,
+                state: Box::new(UvHourlyTypeContentDeserializerState::Init__),
+            };
+            let mut output = deserializer.next(reader, event)?;
+            output.artifact = match output.artifact {
+                DeserializerArtifact::Deserializer(x)
+                    if matches!(&*x.state, UvHourlyTypeContentDeserializerState::Init__) =>
+                {
+                    DeserializerArtifact::None
+                }
+                artifact => artifact,
+            };
+            Ok(output)
+        }
+        fn next<R>(
+            mut self,
+            reader: &R,
+            event: Event<'de>,
+        ) -> DeserializerResult<'de, super::UvHourlyTypeContent>
+        where
+            R: DeserializeReader,
+        {
+            use UvHourlyTypeContentDeserializerState as S;
+            let mut event = event;
+            let mut fallback = None;
             let mut allow_any_element = false;
             let (event, allow_any) = loop {
                 let state = replace(&mut *self.state, S::Unknown__);
@@ -16507,19 +16664,19 @@ pub mod quick_xml_deserialize {
                             }
                         }
                     }
-                    (_, Event::End(_)) => {
+                    (_, event @ Event::End(_)) => {
                         if let Some(fallback) = fallback.take() {
                             self.finish_state(reader, fallback)?;
                         }
                         return Ok(DeserializerOutput {
                             artifact: DeserializerArtifact::Data(self.finish(reader)?),
-                            event: DeserializerEvent::None,
+                            event: DeserializerEvent::Continue(event),
                             allow_any: false,
                         });
                     }
                     (S::Init__, event) => {
                         fallback.get_or_insert(S::Init__);
-                        *self.state = UvHourlyTypeDeserializerState::Index(None);
+                        *self.state = UvHourlyTypeContentDeserializerState::Index(None);
                         event
                     }
                     (S::Index(None), event @ (Event::Start(_) | Event::Empty(_))) => {
@@ -16555,13 +16712,16 @@ pub mod quick_xml_deserialize {
                 allow_any,
             })
         }
-        fn finish<R>(mut self, reader: &R) -> Result<super::UvHourlyType, Error>
+        fn finish<R>(mut self, reader: &R) -> Result<super::UvHourlyTypeContent, Error>
         where
             R: DeserializeReader,
         {
-            let state = replace(&mut *self.state, UvHourlyTypeDeserializerState::Unknown__);
+            let state = replace(
+                &mut *self.state,
+                UvHourlyTypeContentDeserializerState::Unknown__,
+            );
             self.finish_state(reader, state)?;
-            Ok(super::UvHourlyType {
+            Ok(super::UvHourlyTypeContent {
                 index: self
                     .index
                     .ok_or_else(|| ErrorKind::MissingElement("index".into()))?,
@@ -17738,7 +17898,7 @@ pub mod quick_xml_deserialize {
         type_: Option<super::ValidWarningTypesType>,
         description: Option<::std::string::String>,
         priority: Option<super::ValidWarningPrioritiesType>,
-        expiry_time: Option<XsDateTime>,
+        expiry_time: Option<TimeStampType>,
         url: Option<::std::string::String>,
         date_time: Vec<super::DateStampType>,
         state: Box<WarningEventTypeDeserializerState>,
@@ -17758,7 +17918,7 @@ pub mod quick_xml_deserialize {
             let mut type_: Option<super::ValidWarningTypesType> = None;
             let mut description: Option<::std::string::String> = None;
             let mut priority: Option<super::ValidWarningPrioritiesType> = None;
-            let mut expiry_time: Option<XsDateTime> = None;
+            let mut expiry_time: Option<TimeStampType> = None;
             let mut url: Option<::std::string::String> = None;
             for attrib in filter_xmlns_attributes(bytes_start) {
                 let attrib = attrib?;

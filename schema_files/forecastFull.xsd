@@ -52,7 +52,7 @@
             <xs:element name="windChill" type="windChillHourlyType" />
             <xs:element name="humidex" type="humidexHourlyType" />
             <xs:element name="wind" type="windHourlyType" />
-            <xs:element name="uv" type="uvHourlyType" />
+            <xs:element name="uv" type="uvHourlyType" minOccurs="0" />
         </xs:sequence>
         <xs:attribute name="dateTimeUTC" type="dateTimeUTCType"></xs:attribute>
     </xs:complexType>
