@@ -1507,7 +1507,6 @@ version = "0.1.0"
 dependencies = [
  "async-stream",
  "chrono",
- "encoding_rs",
  "futures-core",
  "futures-util",
  "hostname",
