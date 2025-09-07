@@ -536,8 +536,8 @@
     <!-- =================== Visibility Forecast =================== -->
     <xs:complexType name="visibilityTypeForecast">
         <xs:sequence>
-            <xs:element name="windVisib" type="visibilitySubTypeForecast" />
-            <xs:element name="otherVisib" type="visibilitySubTypeForecast" />
+            <xs:element name="windVisib" type="visibilitySubTypeForecast" minOccurs="0" />
+            <xs:element name="otherVisib" type="visibilitySubTypeForecast" minOccurs="0" />
         </xs:sequence>
     </xs:complexType>
     <xs:complexType name="visibilitySubTypeForecast">

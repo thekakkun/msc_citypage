@@ -1776,8 +1776,8 @@ impl WithDeserializer for VisibilityTypeCondType {
 }
 #[derive(Debug)]
 pub struct VisibilityTypeForecastType {
-    pub wind_visib: VisibilitySubTypeForecastType,
-    pub other_visib: VisibilitySubTypeForecastType,
+    pub wind_visib: Option<VisibilitySubTypeForecastType>,
+    pub other_visib: Option<VisibilitySubTypeForecastType>,
 }
 impl WithDeserializer for VisibilityTypeForecastType {
     type Deserializer = quick_xml_deserialize::VisibilityTypeForecastTypeDeserializer;
@@ -17489,16 +17489,10 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.wind_visib.is_some() {
-                    fallback.get_or_insert(VisibilityTypeForecastTypeDeserializerState::WindVisib(
-                        None,
-                    ));
-                    *self.state = VisibilityTypeForecastTypeDeserializerState::OtherVisib(None);
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                } else {
-                    *self.state = VisibilityTypeForecastTypeDeserializerState::WindVisib(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                }
+                fallback
+                    .get_or_insert(VisibilityTypeForecastTypeDeserializerState::WindVisib(None));
+                *self.state = VisibilityTypeForecastTypeDeserializerState::OtherVisib(None);
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -17547,16 +17541,11 @@ pub mod quick_xml_deserialize {
                 allow_any,
             } = output;
             if artifact.is_none() {
-                if self.other_visib.is_some() {
-                    fallback.get_or_insert(
-                        VisibilityTypeForecastTypeDeserializerState::OtherVisib(None),
-                    );
-                    *self.state = VisibilityTypeForecastTypeDeserializerState::Done__;
-                    return Ok(ElementHandlerOutput::from_event(event, allow_any));
-                } else {
-                    *self.state = VisibilityTypeForecastTypeDeserializerState::OtherVisib(None);
-                    return Ok(ElementHandlerOutput::break_(event, allow_any));
-                }
+                fallback.get_or_insert(VisibilityTypeForecastTypeDeserializerState::OtherVisib(
+                    None,
+                ));
+                *self.state = VisibilityTypeForecastTypeDeserializerState::Done__;
+                return Ok(ElementHandlerOutput::from_event(event, allow_any));
             }
             if let Some(fallback) = fallback.take() {
                 self.finish_state(reader, fallback)?;
@@ -17716,12 +17705,8 @@ pub mod quick_xml_deserialize {
             );
             self.finish_state(reader, state)?;
             Ok(super::VisibilityTypeForecastType {
-                wind_visib: self
-                    .wind_visib
-                    .ok_or_else(|| ErrorKind::MissingElement("windVisib".into()))?,
-                other_visib: self
-                    .other_visib
-                    .ok_or_else(|| ErrorKind::MissingElement("otherVisib".into()))?,
+                wind_visib: self.wind_visib,
+                other_visib: self.other_visib,
             })
         }
     }
