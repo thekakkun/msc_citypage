@@ -59,7 +59,7 @@ impl CityPageStream {
             )
             .await?;
 
-        let routing_key = "v02.post.*.WXO-DD.citypage_weather.ON.*";
+        let routing_key = "v02.post.*.WXO-DD.citypage_weather.#";
         channel
             .queue_bind(
                 queue.name().as_str(),
@@ -82,6 +82,7 @@ impl CityPageStream {
 
     fn parse_delivery(delivery: &Delivery) -> Result<(NaiveDateTime, Url), Box<dyn Error>> {
         let body = from_utf8(&delivery.data)?;
+
         let mut iter = body.split_whitespace();
 
         let timestamp = NaiveDateTime::parse_from_str(
@@ -107,6 +108,10 @@ impl Stream for CityPageStream {
         match fut.poll_unpin(cx) {
             std::task::Poll::Ready(Some(delivery)) => {
                 if let Ok(delivery) = delivery {
+                    if delivery.routing_key.as_str().contains("mp3") {
+                        return Poll::Pending;
+                    }
+
                     match Self::parse_delivery(&delivery) {
                         Ok(item) => {
                             tokio::spawn({
