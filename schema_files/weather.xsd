@@ -610,6 +610,7 @@
             <xs:simpleType>
                 <xs:restriction base="xs:string">
                     <xs:enumeration value="" />
+                    <xs:enumeration value="calm" />
                 </xs:restriction>
             </xs:simpleType>
             <xs:simpleType>

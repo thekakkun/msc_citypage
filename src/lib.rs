@@ -12,19 +12,17 @@ mod tests {
     use encoding_rs::WINDOWS_1252;
     use xsd_parser::quick_xml::{DeserializeSync, IoReader, XmlReader};
 
-    use crate::schemas::SiteList;
+    use crate::schemas::{SiteData, SiteList};
 
-    // #[test]
-    // fn parse_site_data() {
-    //     let input_file =
-    //         std::fs::File::open("20250904T020028.758Z_MSC_CitypageWeather_s0000168_en.xml")
-    //             .unwrap();
-    //     let reader = BufReader::new(input_file);
-    //     let mut reader = IoReader::new(reader).with_error_info();
-    //     let mut doc = SiteData::deserialize(&mut reader).unwrap();
-    //
-    //     print!("created structure = {:#?}\n\n", doc);
-    // }
+    #[test]
+    fn parse_site_data() {
+        let input_file = std::fs::File::open("data.xml").unwrap();
+        let reader = BufReader::new(input_file);
+        let mut reader = IoReader::new(reader).with_error_info();
+        let doc = SiteData::deserialize(&mut reader).unwrap();
+
+        print!("created structure = {:#?}\n\n", doc);
+    }
 
     #[test]
     fn parse_site_list() {

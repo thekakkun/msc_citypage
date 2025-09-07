@@ -22,10 +22,20 @@ fn main() -> Result<(), Error> {
         Schema::File("schema_files/weather.xsd".into()),
     ];
     config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
-    config.interpreter.types = vec![(
-        IdentTriple::from((IdentType::Type, "timeStampType")),
-        MetaType::from(CustomMeta::new("XsDateTime").include_from("crate::schemas::XsDateTime")),
-    )];
+    config.interpreter.types = vec![
+        (
+            IdentTriple::from((IdentType::Type, "timeStampType")),
+            MetaType::from(
+                CustomMeta::new("XsDateTime").include_from("crate::schemas::XsDateTime"),
+            ),
+        ),
+        (
+            IdentTriple::from((IdentType::Attribute, "dateTimeUTC")),
+            MetaType::from(
+                CustomMeta::new("XsDateTime").include_from("crate::schemas::XsDateTime"),
+            ),
+        ),
+    ];
     config.optimizer.flags = OptimizerFlags::all()
         - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS
         - OptimizerFlags::REMOVE_DUPLICATES;
