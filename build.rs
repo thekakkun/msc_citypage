@@ -1,7 +1,9 @@
 use quote::ToTokens;
 use std::{
+    env,
     fs::File,
     io::Write,
+    path::Path,
     process::{Command, Output, Stdio},
 };
 use xsd_parser::{
@@ -60,7 +62,10 @@ fn main() -> Result<(), Error> {
 
     let code = rustfmt_pretty_print(code).unwrap();
 
-    let mut file = File::create("src/schemas/generated.rs")?;
+    let out_dir = env::var_os("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join("generated.rs");
+
+    let mut file = File::create(dest_path)?;
     file.write_all(code.to_string().as_bytes())?;
 
     Ok(())
