@@ -13,4 +13,4 @@ mod custom;
 mod generated;
 
 pub use custom::*;
-pub use generated::{SiteData, SiteList};
+pub use generated::*;
