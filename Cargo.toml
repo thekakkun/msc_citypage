@@ -1,6 +1,6 @@
 [package]
 name = "msc_citypage"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 description = "Retrieve weather conditions and forecasts for Canadian cities from the Meteorological Service of Canada (MSC) "
 documentation = "https://docs.rs/crate/msc_citypage"
