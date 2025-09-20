@@ -21,7 +21,7 @@ pub(crate) fn gen_forecast_full() -> Result<(), Error> {
     config.interpreter.types = vec![(
         IdentTriple::from((IdentType::Type, "dateStampType")),
         MetaType::from(
-            CustomMeta::new("DateStampType").include_from("crate::models::genral::DateStampType"),
+            CustomMeta::new("DateStampType").include_from("crate::models::general::DateStampType"),
         ),
     )];
     config.optimizer.flags = OptimizerFlags::all()

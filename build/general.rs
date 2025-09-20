@@ -1,6 +1,11 @@
 use crate::rustfmt_pretty_print;
 use quote::ToTokens;
-use std::{env, fs::File, io::Write, path::Path};
+use std::{
+    env,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 use xsd_parser::{
     Config, Error, IdentType, MetaTypes,
     config::{
@@ -12,34 +17,20 @@ use xsd_parser::{
 
 pub(crate) fn gen_general() -> Result<(), Error> {
     let mut config = Config::default();
+    config.parser.debug_output = Some(PathBuf::from("./schemas.log"));
     config.parser.schemas = vec![Schema::File("schema_files/general.xsd".into())];
     config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
-    config.interpreter.types = vec![
-        (
-            IdentTriple::from((IdentType::Type, "dateStampType")),
-            MetaType::from(
-                CustomMeta::new("DateStampType")
-                    .include_from("crate::models::general::DateStampType"),
-            ),
+    config.interpreter.types = vec![(
+        IdentTriple::from((IdentType::Type, "dateStampType")),
+        MetaType::from(
+            CustomMeta::new("DateStampType").include_from("crate::models::general::DateStampType"),
         ),
-        // (
-        //     IdentTriple::from((IdentType::Type, "timeStampType")),
-        //     MetaType::from(
-        //         CustomMeta::new("TimeStampType")
-        //             .include_from("crate::models::general::TimeStampType"),
-        //     ),
-        // ),
-        // (
-        //     IdentTriple::from((IdentType::Type, "dateTimeUTCType")),
-        //     MetaType::from(
-        //         CustomMeta::new("DateTimeUtcType")
-        //             .include_from("crate::models::general::DateTimeUtcType"),
-        //     ),
-        // ),
-    ];
+    )];
+    config.interpreter.debug_output = Some(PathBuf::from("./interpreter.log"));
     config.optimizer.flags = OptimizerFlags::all()
         - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS
         - OptimizerFlags::REMOVE_DUPLICATES;
+    config.optimizer.debug_output = Some(PathBuf::from("./optimizer.log"));
     config.generator.flags = GeneratorFlags::all() - GeneratorFlags::MIXED_TYPE_SUPPORT;
 
     let config = config.with_render_steps([
