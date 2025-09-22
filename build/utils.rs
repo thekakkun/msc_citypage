@@ -4,6 +4,21 @@ use std::{
     process::{Command, Output, Stdio},
 };
 
+#[macro_export]
+macro_rules! custom_type {
+    ($ident_name:ident, $path:path, $type_name:expr) => {
+        (
+            IdentTriple::from((IdentType::Type, stringify!($ident_name))),
+            MetaType::from(CustomMeta::new($type_name).include_from(concat!(
+                "crate::",
+                stringify!($path),
+                "::",
+                $type_name
+            ))),
+        )
+    };
+}
+
 // A small helper to call `rustfmt` when generating file(s).
 // This may be useful to compare different versions of generated file
 pub(crate) fn rustfmt_pretty_print(code: String) -> Result<String, Box<dyn Error>> {

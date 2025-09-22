@@ -25,6 +25,13 @@ pub(crate) fn gen_weather() -> Result<(), Error> {
             ),
         ),
         (
+            IdentTriple::from((IdentType::Type, "textSummaryType")),
+            MetaType::from(
+                CustomMeta::new("TextSummaryType")
+                    .include_from("crate::models::general::TextSummaryType"),
+            ),
+        ),
+        (
             IdentTriple::from((IdentType::Type, "yearType")),
             MetaType::from(BuildInMeta::I8),
         ),

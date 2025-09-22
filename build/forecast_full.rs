@@ -1,8 +1,9 @@
+use crate::custom_type;
+use crate::utils::rustfmt_pretty_print;
 use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-
 use xsd_parser::config::{
     GeneratorFlags, IdentTriple, InterpreterFlags, MetaType, OptimizerFlags, ParserFlags,
     RenderStep, Schema,
@@ -11,19 +12,53 @@ use xsd_parser::models::meta::CustomMeta;
 use xsd_parser::{Config, Error};
 use xsd_parser::{IdentType, generate};
 
-use crate::utils::rustfmt_pretty_print;
-
 pub(crate) fn gen_forecast_full() -> Result<(), Error> {
     let mut config = Config::default();
     config.parser.schemas = vec![Schema::File("schema_files/forecastFull.xsd".into())];
     config.parser.flags = ParserFlags::DEFAULT_NAMESPACES;
     config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
-    config.interpreter.types = vec![(
-        IdentTriple::from((IdentType::Type, "dateStampType")),
-        MetaType::from(
-            CustomMeta::new("DateStampType").include_from("crate::models::general::DateStampType"),
+    config.interpreter.types = vec![
+        custom_type!(dateStampType, models::general, "DateStampType"),
+        custom_type!(textSummaryType, models::general, "TextSummaryType"),
+        custom_type!(regionalNormalsType, models::general, "RegionalNormalsType"),
+        custom_type!(dateTimeUTCType, models::general, "DateTimeUTCType"),
+        custom_type!(periodType, models::weather, "PeriodType"),
+        custom_type!(cloudPrecipType, models::weather, "CloudPrecipType"),
+        custom_type!(
+            abbreviatedForecastType,
+            models::weather,
+            "AbbreviatedForecastType"
         ),
-    )];
+        custom_type!(temperaturesType, models::weather, "TemperaturesType"),
+        custom_type!(windsType, models::weather, "WindsType"),
+        custom_type!(precipTypeForecast, models::weather, "PrecipTypeForecast"),
+        custom_type!(snowLevelType, models::weather, "SnowLevelType"),
+        custom_type!(windChillType, models::weather, "WindChillType"),
+        custom_type!(
+            visibilityTypeForecast,
+            models::weather,
+            "VisibilityTypeForecast"
+        ),
+        custom_type!(uvType, models::weather, "UvType"),
+        custom_type!(
+            relativeHumidityType,
+            models::weather,
+            "RelativeHumidityType"
+        ),
+        custom_type!(humidexType, models::weather, "HumidexType"),
+        custom_type!(frostType, models::weather, "FrostType"),
+        custom_type!(iconCodeHourlyType, models::weather, "IconCodeHourlyType"),
+        custom_type!(
+            temperatureHourlyType,
+            models::weather,
+            "TemperatureHourlyType"
+        ),
+        custom_type!(lopHourlyType, models::weather, "LopHourlyType"),
+        custom_type!(windChillHourlyType, models::weather, "WindChillHourlyType"),
+        custom_type!(humidexHourlyType, models::weather, "HumidexHourlyType"),
+        custom_type!(windHourlyType, models::weather, "WindHourlyType"),
+        custom_type!(uvHourlyType, models::weather, "UvHourlyType"),
+    ];
     config.optimizer.flags = OptimizerFlags::all()
         - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS
         - OptimizerFlags::REMOVE_DUPLICATES;

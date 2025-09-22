@@ -945,11 +945,11 @@
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="riseSetElementType">
-        <xs:sequence>
-            <xs:element name="time" type="timeType" />
-        </xs:sequence>
-    </xs:complexType>
+    <!-- <xs:complexType name="riseSetElementType"> -->
+    <!--     <xs:sequence> -->
+    <!--         <xs:element name="time" type="timeType" /> -->
+    <!--     </xs:sequence> -->
+    <!-- </xs:complexType> -->
     <!-- ======================= Regional Normals ======================== -->
     <xs:complexType name="regionalNormalsType">
         <xs:sequence>
