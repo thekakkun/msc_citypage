@@ -1,5 +1,3 @@
-include!(concat!(env!("OUT_DIR"), "/general.rs"));
-
 use std::{default, fmt::Debug};
 
 use chrono::{DateTime, TimeZone};

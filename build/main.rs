@@ -1,11 +1,11 @@
-use forecast_full::gen_forecast_full;
+// use forecast_full::gen_forecast_full;
 use general::gen_general;
 use site_list::gen_site_list;
 use utils::rustfmt_pretty_print;
 use weather::gen_weather;
 use xsd_parser::Error;
 
-mod forecast_full;
+// mod forecast_full;
 mod general;
 mod site_list;
 mod utils;
@@ -15,7 +15,7 @@ fn main() -> Result<(), Error> {
     gen_site_list()?;
     gen_general()?;
     gen_weather()?;
-    gen_forecast_full()?;
+    // gen_forecast_full()?;
 
     // let mut config = Config::default();
     // config.parser.schemas = vec![

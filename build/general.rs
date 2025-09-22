@@ -17,7 +17,6 @@ use xsd_parser::{
 
 pub(crate) fn gen_general() -> Result<(), Error> {
     let mut config = Config::default();
-    config.parser.debug_output = Some(PathBuf::from("./schemas.log"));
     config.parser.schemas = vec![Schema::File("schema_files/general.xsd".into())];
     config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
     config.interpreter.types = vec![(
@@ -26,11 +25,9 @@ pub(crate) fn gen_general() -> Result<(), Error> {
             CustomMeta::new("DateStampType").include_from("crate::models::general::DateStampType"),
         ),
     )];
-    config.interpreter.debug_output = Some(PathBuf::from("./interpreter.log"));
     config.optimizer.flags = OptimizerFlags::all()
         - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS
         - OptimizerFlags::REMOVE_DUPLICATES;
-    config.optimizer.debug_output = Some(PathBuf::from("./optimizer.log"));
     config.generator.flags = GeneratorFlags::all() - GeneratorFlags::MIXED_TYPE_SUPPORT;
 
     let config = config.with_render_steps([
@@ -48,12 +45,13 @@ pub(crate) fn gen_general() -> Result<(), Error> {
     let meta_types = exec_optimizer(config.optimizer, meta_types)?;
     let data_types = exec_generator(config.generator, &schemas, &meta_types)?;
     let module = exec_render(config.renderer, &data_types)?;
-    let code = module.to_token_stream().to_string();
 
+    let code = module.to_token_stream().to_string();
     let code = rustfmt_pretty_print(code).unwrap();
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("general.rs");
+    println!("{:?}", dest_path);
 
     let mut file = File::create(dest_path)?;
     file.write_all(code.to_string().as_bytes())?;

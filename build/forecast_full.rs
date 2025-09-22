@@ -38,8 +38,7 @@ pub(crate) fn gen_forecast_full() -> Result<(), Error> {
         },
     ]);
 
-    let code = generate(config)?;
-    let code = code.to_string();
+    let code = generate(config)?.to_string();
     let code = rustfmt_pretty_print(code).unwrap();
 
     let out_dir = env::var_os("OUT_DIR").unwrap();

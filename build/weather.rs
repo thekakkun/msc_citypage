@@ -25,6 +25,12 @@ pub(crate) fn gen_weather() -> Result<(), Error> {
             ),
         ),
         (
+            IdentTriple::from((IdentType::Type, "yearType")),
+            MetaType::from(
+                CustomMeta::new("YearType").include_from("crate::models::general::YearType"),
+            ),
+        ),
+        (
             IdentTriple::from((IdentType::Type, "validDayNames")),
             MetaType::from(
                 CustomMeta::new("ValidDayNamesType")

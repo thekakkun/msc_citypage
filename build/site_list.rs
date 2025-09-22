@@ -27,8 +27,7 @@ pub(crate) fn gen_site_list() -> Result<(), Error> {
         },
     ]);
 
-    let code = generate(config)?;
-    let code = code.to_string();
+    let code = generate(config)?.to_string();
     let code = rustfmt_pretty_print(code).unwrap();
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
