@@ -8,7 +8,7 @@ use xsd_parser::{
         RenderStep, Schema,
     },
     exec_generator, exec_interpreter, exec_optimizer, exec_parser, exec_render,
-    models::meta::{CustomMeta, MetaTypeVariant},
+    models::meta::{BuildInMeta, CustomMeta, MetaTypeVariant},
 };
 
 pub(crate) fn gen_weather() -> Result<(), Error> {
@@ -26,9 +26,11 @@ pub(crate) fn gen_weather() -> Result<(), Error> {
         ),
         (
             IdentTriple::from((IdentType::Type, "yearType")),
-            MetaType::from(
-                CustomMeta::new("YearType").include_from("crate::models::general::YearType"),
-            ),
+            MetaType::from(BuildInMeta::I8),
+        ),
+        (
+            IdentTriple::from((IdentType::Type, "timeStampType")),
+            MetaType::from(BuildInMeta::String),
         ),
         (
             IdentTriple::from((IdentType::Type, "validDayNames")),

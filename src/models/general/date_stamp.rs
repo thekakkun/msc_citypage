@@ -5,7 +5,7 @@ use chrono_tz::Tz;
 use quick_xml::events::{BytesStart, BytesText, Event};
 use xsd_parser::quick_xml::{
     Deserializer, DeserializerArtifact, DeserializerEvent, DeserializerOutput, DeserializerResult,
-    XmlReader,
+    WithDeserializer, XmlReader,
 };
 
 #[derive(Debug)]

@@ -1,6 +1,5 @@
 use std::{fs::File, io::BufReader};
 
-use msc_citypage::SiteData;
 use xsd_parser::quick_xml::{DeserializeSync, IoReader, XmlReader};
 
 /// An example of deserializing a SiteData XML.
