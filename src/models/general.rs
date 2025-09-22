@@ -1,20 +1,14 @@
-use std::{default, error::Error, fmt::Debug};
-
-use chrono::{DateTime, ParseError, TimeZone};
-use chrono_tz::Tz;
-use quick_xml::{
-    events::{BytesStart, BytesText, Event},
-    se,
-};
-use xsd_parser::{
-    config::DynTypeTraits,
-    quick_xml::{
-        DeserializeSync, Deserializer, DeserializerArtifact, DeserializerEvent, DeserializerOutput,
-        DeserializerResult, WithDeserializer, XmlReader,
-    },
-};
-
 include!(concat!(env!("OUT_DIR"), "/general.rs"));
+
+use std::{default, fmt::Debug};
+
+use chrono::{DateTime, TimeZone};
+use chrono_tz::Tz;
+use quick_xml::events::{BytesStart, BytesText, Event};
+use xsd_parser::quick_xml::{
+    Deserializer, DeserializerArtifact, DeserializerEvent, DeserializerOutput, DeserializerResult,
+    XmlReader,
+};
 
 #[derive(Debug)]
 pub struct DateStampType<Tz: TimeZone> {
@@ -54,7 +48,10 @@ enum DateStampTypeDeserializerState {
 }
 
 impl DateStampTypeDeserializer {
-    fn handle_datetime(&mut self, bytes_start: &BytesStart) -> Result<(), Box<dyn Error>> {
+    fn handle_datetime(
+        &mut self,
+        bytes_start: &BytesStart,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         for attr_result in bytes_start.attributes() {
             let a = attr_result?;
             if a.key.as_ref() == b"zone" {
@@ -76,23 +73,23 @@ impl DateStampTypeDeserializer {
         Ok(())
     }
 
-    fn set_year(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn Error>> {
+    fn set_year(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn std::error::Error>> {
         self.year = Some(bytes_text.decode()?.parse()?);
         Ok(())
     }
-    fn set_month(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn Error>> {
+    fn set_month(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn std::error::Error>> {
         self.month = Some(bytes_text.decode()?.parse()?);
         Ok(())
     }
-    fn set_day(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn Error>> {
+    fn set_day(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn std::error::Error>> {
         self.day = Some(bytes_text.decode()?.parse()?);
         Ok(())
     }
-    fn set_hour(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn Error>> {
+    fn set_hour(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn std::error::Error>> {
         self.hour = Some(bytes_text.decode()?.parse()?);
         Ok(())
     }
-    fn set_minute(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn Error>> {
+    fn set_minute(&mut self, bytes_text: &BytesText) -> Result<(), Box<dyn std::error::Error>> {
         self.minute = Some(bytes_text.decode()?.parse()?);
         Ok(())
     }
@@ -117,14 +114,12 @@ where
     where
         R: XmlReader,
     {
-        let _reader = reader;
-
         match event {
             Event::Start(ref bytes_start) => {
                 match bytes_start.name().as_ref() {
                     b"dateTime" => {
                         self.state = DateStampTypeDeserializerState::DateTime;
-                        let _ = self.handle_datetime(&bytes_start);
+                        self.handle_datetime(&bytes_start);
                     }
                     b"year" => self.state = DateStampTypeDeserializerState::Year,
                     b"month" => self.state = DateStampTypeDeserializerState::Month,
@@ -137,7 +132,7 @@ where
                 };
                 return Ok(DeserializerOutput {
                     artifact: DeserializerArtifact::Deserializer(self),
-                    event: DeserializerEvent::Continue(event),
+                    event: DeserializerEvent::None,
                     allow_any: false,
                 });
             }
@@ -146,7 +141,7 @@ where
                     let result = self.finish(reader)?;
                     return Ok(DeserializerOutput {
                         artifact: DeserializerArtifact::Data(result),
-                        event: DeserializerEvent::Break(event),
+                        event: DeserializerEvent::None,
                         allow_any: false,
                     });
                 }
@@ -154,7 +149,7 @@ where
                     self.state = DateStampTypeDeserializerState::DateTime;
                     return Ok(DeserializerOutput {
                         artifact: DeserializerArtifact::Deserializer(self),
-                        event: DeserializerEvent::Continue(event),
+                        event: DeserializerEvent::None,
                         allow_any: false,
                     });
                 }
@@ -165,7 +160,7 @@ where
             Event::Empty(_) => {
                 return Ok(DeserializerOutput {
                     artifact: DeserializerArtifact::Deserializer(self),
-                    event: DeserializerEvent::Continue(event),
+                    event: DeserializerEvent::None,
                     allow_any: false,
                 });
             }
@@ -182,7 +177,7 @@ where
                 };
                 return Ok(DeserializerOutput {
                     artifact: DeserializerArtifact::Deserializer(self),
-                    event: DeserializerEvent::Continue(event),
+                    event: DeserializerEvent::None,
                     allow_any: false,
                 });
             }
@@ -195,7 +190,7 @@ where
             | Event::Eof => {
                 return Ok(DeserializerOutput {
                     artifact: DeserializerArtifact::Deserializer(self),
-                    event: DeserializerEvent::Continue(event),
+                    event: DeserializerEvent::None,
                     allow_any: false,
                 });
             }
@@ -227,108 +222,3 @@ where
         Ok(DateStampType { datetime })
     }
 }
-
-// impl<Tz: TimeZone> TryFrom<DateStampTypeDeserializer> for DateStampType<Tz> {
-//     type Error = ParseError;
-//
-//     fn try_from(value: DateStampTypeDeserializer) -> Result<Self, Self::Error> {
-//         let year = value.year.ok_or(ParseError)?;
-//         let month = value.month.ok_or(ParseError)?;
-//         let day = value.day.ok_or(ParseError)?;
-//         let hour = value.hour.ok_or(ParseError)?;
-//         let min = value.minute.ok_or(ParseError)?;
-//         let timezone = value.timezone.ok_or(ParseError)?;
-//
-//         let datetime = timezone
-//             .with_ymd_and_hms(year, month, day, hour, min, 0)
-//             .single()
-//             .ok_or(ParseError)?;
-//
-//         Ok(DateStampType { datetime })
-//     }
-// }
-
-// impl DeserializeBytesFromStr for DateStampType<Tz: TimeZone> {}
-//
-// pub(crate) struct DateStampTypeDeserializer<Tz: TimeZone> {
-//     datetime: Option<DateTime<Tz>>,
-// }
-// impl<'de, Tz: TimeZone> Deserializer<'de, DateStampType<Tz>> for DateStampTypeDeserializer<Tz> {
-//     fn init<R>(
-//         reader: &R,
-//         event: quick_xml::events::Event<'de>,
-//     ) -> xsd_parser::quick_xml::DeserializerResult<'de, DateStampType<Tz>>
-//     where
-//         R: xsd_parser::quick_xml::XmlReader,
-//     {
-//         todo!()
-//     }
-//
-//     fn next<R>(
-//         self,
-//         reader: &R,
-//         event: quick_xml::events::Event<'de>,
-//     ) -> xsd_parser::quick_xml::DeserializerResult<'de, DateStampType<Tz>>
-//     where
-//         R: xsd_parser::quick_xml::XmlReader,
-//     {
-//         todo!()
-//     }
-//
-//     fn finish<R>(self, reader: &R) -> Result<DateStampType<Tz>, xsd_parser::quick_xml::Error>
-//     where
-//         R: xsd_parser::quick_xml::XmlReader,
-//     {
-//         todo!()
-//     }
-// }
-//
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct TimeStampType(pub DateTime<Utc>);
-//
-// impl FromStr for TimeStampType {
-//     type Err = ParseError;
-//
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         NaiveDateTime::parse_from_str(s, "%Y%m%d%H%M%S")
-//             .map(|datetime| Self(DateTime::<Utc>::from_naive_utc_and_offset(datetime, Utc)))
-//     }
-// }
-//
-// impl<'de> Deserialize<'de> for TimeStampType {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: serde::Deserializer<'de>,
-//     {
-//         let s = String::deserialize(deserializer)?;
-//         Ok(Self(s.parse().map_err(|_| {
-//             DeError::custom("DateTime. Invalid value!")
-//         })?))
-//     }
-// }
-// impl DeserializeBytesFromStr for TimeStampType {}
-//
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub struct DateTimeUtcType(pub DateTime<Utc>);
-//
-// impl FromStr for DateTimeUtcType {
-//     type Err = ParseError;
-//
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         NaiveDateTime::parse_from_str(s, "%Y%m%d%H%M")
-//             .map(|datetime| Self(DateTime::<Utc>::from_naive_utc_and_offset(datetime, Utc)))
-//     }
-// }
-//
-// impl<'de> Deserialize<'de> for DateTimeUtcType {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: serde::Deserializer<'de>,
-//     {
-//         let s = String::deserialize(deserializer)?;
-//         Ok(Self(s.parse().map_err(|_| {
-//             DeError::custom("DateTime. Invalid value!")
-//         })?))
-//     }
-// }
-// impl DeserializeBytesFromStr for DateTimeUtcType {}
