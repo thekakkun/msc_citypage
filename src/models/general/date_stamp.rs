@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, str::FromStr};
 
 use chrono::{DateTime, TimeZone};
 use chrono_tz::Tz;
@@ -11,7 +11,37 @@ use xsd_parser::quick_xml::{
 #[derive(Debug)]
 pub struct DateStampType {
     pub datetime: DateTime<Tz>,
-    // pub type_: DateStampNameType,
+    pub name: DateStampNameType,
+}
+
+#[derive(Debug)]
+pub enum DateStampNameType {
+    Observation,
+    XmlCreation,
+    ForecastIssue,
+    EventIssue,
+    Sunrise,
+    Sunset,
+    Moonrise,
+    Moonset,
+}
+
+impl FromStr for DateStampNameType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "observation" => Ok(Self::Observation),
+            "xmlCreation" => Ok(Self::XmlCreation),
+            "forecastIssue" => Ok(Self::ForecastIssue),
+            "eventIssue" => Ok(Self::EventIssue),
+            "sunrise" => Ok(Self::Sunrise),
+            "sunset" => Ok(Self::Sunset),
+            "moonrise" => Ok(Self::Moonrise),
+            "moonset" => Ok(Self::Moonset),
+            other => Err(format!("Unknown DateStameNameType: {}", other)),
+        }
+    }
 }
 
 impl WithDeserializer for DateStampType
@@ -29,6 +59,7 @@ pub struct DateStampTypeDeserializer {
     hour: Option<u32>,
     minute: Option<u32>,
     timezone: Option<Tz>,
+    name: Option<DateStampNameType>,
     state: DateStampTypeDeserializerState,
 }
 
@@ -46,6 +77,17 @@ enum DateStampTypeDeserializerState {
 }
 
 impl DateStampTypeDeserializer {
+    fn handle_name(&mut self, bytes_start: &BytesStart) -> Result<(), Box<dyn std::error::Error>> {
+        for attr_result in bytes_start.attributes() {
+            let a = attr_result?;
+            if a.key.as_ref() == b"name" {
+                let name = a.decode_and_unescape_value(bytes_start.decoder())?;
+                self.name = DateStampNameType::from_str(&name).ok();
+            }
+        }
+        Ok(())
+    }
+
     fn handle_datetime(
         &mut self,
         bytes_start: &BytesStart,
@@ -110,6 +152,7 @@ impl<'de> Deserializer<'de, DateStampType> for DateStampTypeDeserializer {
                 match bytes_start.name().as_ref() {
                     b"dateTime" => {
                         self.state = DateStampTypeDeserializerState::DateTime;
+                        self.handle_name(&bytes_start);
                         self.handle_datetime(&bytes_start);
                     }
                     b"year" => self.state = DateStampTypeDeserializerState::Year,
@@ -210,6 +253,8 @@ impl<'de> Deserializer<'de, DateStampType> for DateStampTypeDeserializer {
             .single()
             .unwrap();
 
-        Ok(DateStampType { datetime })
+        let name = self.name.unwrap();
+
+        Ok(DateStampType { datetime, name })
     }
 }
