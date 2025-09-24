@@ -1,30 +1,32 @@
 use crate::rustfmt_pretty_print;
 use quote::ToTokens;
-use std::{
-    env,
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::{env, fs::File, io::Write, path::Path};
 use xsd_parser::{
     Config, Error, IdentType, MetaTypes,
     config::{
         GeneratorFlags, IdentTriple, InterpreterFlags, MetaType, OptimizerFlags, RenderStep, Schema,
     },
     exec_generator, exec_interpreter, exec_optimizer, exec_parser, exec_render,
-    models::meta::{CustomMeta, MetaTypeVariant},
+    models::meta::{BuildInMeta, CustomMeta, MetaTypeVariant},
 };
 
 pub(crate) fn gen_general() -> Result<(), Error> {
     let mut config = Config::default();
     config.parser.schemas = vec![Schema::File("schema_files/general.xsd".into())];
     config.interpreter.flags = InterpreterFlags::all() - InterpreterFlags::WITH_NUM_BIG_INT;
-    config.interpreter.types = vec![(
-        IdentTriple::from((IdentType::Type, "dateStampType")),
-        MetaType::from(
-            CustomMeta::new("DateStampType").include_from("crate::models::general::DateStampType"),
+    config.interpreter.types = vec![
+        (
+            IdentTriple::from((IdentType::Type, "dateStampType")),
+            MetaType::from(
+                CustomMeta::new("DateStampType")
+                    .include_from("crate::models::general::DateStampType"),
+            ),
         ),
-    )];
+        (
+            IdentTriple::from((IdentType::Type, "dateTimeUTCType")),
+            MetaType::from(BuildInMeta::String),
+        ),
+    ];
     config.optimizer.flags = OptimizerFlags::all()
         - OptimizerFlags::REMOVE_EMPTY_ENUM_VARIANTS
         - OptimizerFlags::REMOVE_DUPLICATES;
@@ -51,7 +53,6 @@ pub(crate) fn gen_general() -> Result<(), Error> {
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("general.rs");
-    println!("{:?}", dest_path);
 
     let mut file = File::create(dest_path)?;
     file.write_all(code.to_string().as_bytes())?;

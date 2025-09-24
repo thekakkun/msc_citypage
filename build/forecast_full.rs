@@ -8,7 +8,7 @@ use xsd_parser::config::{
     GeneratorFlags, IdentTriple, InterpreterFlags, MetaType, OptimizerFlags, ParserFlags,
     RenderStep, Schema,
 };
-use xsd_parser::models::meta::CustomMeta;
+use xsd_parser::models::meta::{BuildInMeta, CustomMeta};
 use xsd_parser::{Config, Error};
 use xsd_parser::{IdentType, generate};
 
@@ -20,7 +20,11 @@ pub(crate) fn gen_forecast_full() -> Result<(), Error> {
     config.interpreter.types = vec![
         custom_type!(dateStampType, models::general, "DateStampType"),
         custom_type!(textSummaryType, models::general, "TextSummaryType"),
-        custom_type!(dateTimeUTCType, models::general, "DateTimeUtcType"),
+        // custom_type!(dateTimeUTCType, models::general, "DateTimeUTCType"),
+        (
+            IdentTriple::from((IdentType::Type, "dateTimeUTCType")),
+            MetaType::from(BuildInMeta::String),
+        ),
         custom_type!(regionalNormalsType, models::weather, "RegionalNormalsType"),
         custom_type!(periodType, models::weather, "PeriodType"),
         custom_type!(cloudPrecipType, models::weather, "CloudPrecipType"),

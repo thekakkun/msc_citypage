@@ -1,4 +1,4 @@
-use std::{default, fmt::Debug};
+use std::fmt::Debug;
 
 use chrono::{DateTime, TimeZone};
 use chrono_tz::Tz;
