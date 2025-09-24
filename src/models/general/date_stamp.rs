@@ -9,14 +9,14 @@ use xsd_parser::quick_xml::{
 };
 
 #[derive(Debug)]
-pub struct DateStampType<Tz: TimeZone> {
+pub struct DateStampType {
     pub datetime: DateTime<Tz>,
     // pub type_: DateStampNameType,
 }
 
-impl<Tz: TimeZone> WithDeserializer for DateStampType<Tz>
+impl WithDeserializer for DateStampType
 where
-    for<'de> DateStampTypeDeserializer: Deserializer<'de, DateStampType<Tz>>,
+    for<'de> DateStampTypeDeserializer: Deserializer<'de, DateStampType>,
 {
     type Deserializer = DateStampTypeDeserializer;
 }
@@ -93,22 +93,15 @@ impl DateStampTypeDeserializer {
     }
 }
 
-impl<'de> Deserializer<'de, DateStampType<Tz>> for DateStampTypeDeserializer
-where
-    Tz: TimeZone,
-{
-    fn init<R>(reader: &R, event: Event<'de>) -> DeserializerResult<'de, DateStampType<Tz>>
+impl<'de> Deserializer<'de, DateStampType> for DateStampTypeDeserializer {
+    fn init<R>(reader: &R, event: Event<'de>) -> DeserializerResult<'de, DateStampType>
     where
         R: XmlReader,
     {
         Self::default().next(reader, event)
     }
 
-    fn next<R>(
-        mut self,
-        reader: &R,
-        event: Event<'de>,
-    ) -> DeserializerResult<'de, DateStampType<Tz>>
+    fn next<R>(mut self, reader: &R, event: Event<'de>) -> DeserializerResult<'de, DateStampType>
     where
         R: XmlReader,
     {
@@ -201,7 +194,7 @@ where
         })
     }
 
-    fn finish<R>(self, _reader: &R) -> Result<DateStampType<Tz>, xsd_parser::quick_xml::Error>
+    fn finish<R>(self, _reader: &R) -> Result<DateStampType, xsd_parser::quick_xml::Error>
     where
         R: XmlReader,
     {

@@ -20,8 +20,8 @@ pub(crate) fn gen_forecast_full() -> Result<(), Error> {
     config.interpreter.types = vec![
         custom_type!(dateStampType, models::general, "DateStampType"),
         custom_type!(textSummaryType, models::general, "TextSummaryType"),
-        custom_type!(regionalNormalsType, models::general, "RegionalNormalsType"),
-        custom_type!(dateTimeUTCType, models::general, "DateTimeUTCType"),
+        custom_type!(dateTimeUTCType, models::general, "DateTimeUtcType"),
+        custom_type!(regionalNormalsType, models::weather, "RegionalNormalsType"),
         custom_type!(periodType, models::weather, "PeriodType"),
         custom_type!(cloudPrecipType, models::weather, "CloudPrecipType"),
         custom_type!(
@@ -31,13 +31,17 @@ pub(crate) fn gen_forecast_full() -> Result<(), Error> {
         ),
         custom_type!(temperaturesType, models::weather, "TemperaturesType"),
         custom_type!(windsType, models::weather, "WindsType"),
-        custom_type!(precipTypeForecast, models::weather, "PrecipTypeForecast"),
+        custom_type!(
+            precipTypeForecast,
+            models::weather,
+            "PrecipTypeForecastType"
+        ),
         custom_type!(snowLevelType, models::weather, "SnowLevelType"),
         custom_type!(windChillType, models::weather, "WindChillType"),
         custom_type!(
             visibilityTypeForecast,
             models::weather,
-            "VisibilityTypeForecast"
+            "VisibilityTypeForecastType"
         ),
         custom_type!(uvType, models::weather, "UvType"),
         custom_type!(

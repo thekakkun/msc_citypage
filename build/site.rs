@@ -28,13 +28,13 @@ pub(crate) fn gen_site() -> Result<(), Error> {
         ),
         custom_type!(
             forecastGroupTypeFull,
-            models::weather,
-            "ForecastGroupTypeFull"
+            models::forecast_full,
+            "ForecastGroupTypeFullType"
         ),
         custom_type!(
             hourlyForecastGroupTypeFull,
-            models::weather,
-            "HourlyForecastGroupTypeFull"
+            models::forecast_full,
+            "HourlyForecastGroupTypeFullType"
         ),
         custom_type!(riseSetType, models::weather, "RiseSetType"),
     ];
