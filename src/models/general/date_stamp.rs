@@ -1,11 +1,13 @@
-use std::{fmt::Debug, str::FromStr};
-
 use chrono::{DateTime, TimeZone};
 use chrono_tz::Tz;
 use quick_xml::events::{BytesStart, BytesText, Event};
-use xsd_parser::quick_xml::{
-    Deserializer, DeserializerArtifact, DeserializerEvent, DeserializerOutput, DeserializerResult,
-    WithDeserializer, XmlReader,
+use std::fmt::Debug;
+use xsd_parser::{
+    models::RawByteStr,
+    quick_xml::{
+        DeserializeBytes, DeserializeReader, Deserializer, DeserializerArtifact, DeserializerEvent,
+        DeserializerOutput, DeserializerResult, Error, ErrorKind, WithDeserializer, XmlReader,
+    },
 };
 
 #[derive(Debug)]
@@ -25,21 +27,21 @@ pub enum DateStampNameType {
     Moonrise,
     Moonset,
 }
-
-impl FromStr for DateStampNameType {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "observation" => Ok(Self::Observation),
-            "xmlCreation" => Ok(Self::XmlCreation),
-            "forecastIssue" => Ok(Self::ForecastIssue),
-            "eventIssue" => Ok(Self::EventIssue),
-            "sunrise" => Ok(Self::Sunrise),
-            "sunset" => Ok(Self::Sunset),
-            "moonrise" => Ok(Self::Moonrise),
-            "moonset" => Ok(Self::Moonset),
-            other => Err(format!("Unknown DateStameNameType: {}", other)),
+impl DeserializeBytes for DateStampNameType {
+    fn deserialize_bytes<R>(reader: &R, bytes: &[u8]) -> Result<Self, Error>
+    where
+        R: DeserializeReader,
+    {
+        match bytes {
+            b"observation" => Ok(Self::Observation),
+            b"xmlCreation" => Ok(Self::XmlCreation),
+            b"forecastIssue" => Ok(Self::ForecastIssue),
+            b"eventIssue" => Ok(Self::EventIssue),
+            b"sunrise" => Ok(Self::Sunrise),
+            b"sunset" => Ok(Self::Sunset),
+            b"moonrise" => Ok(Self::Moonrise),
+            b"moonset" => Ok(Self::Moonset),
+            x => Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(RawByteStr::from_slice(x)))),
         }
     }
 }
@@ -77,21 +79,25 @@ enum DateStampTypeDeserializerState {
 }
 
 impl DateStampTypeDeserializer {
-    fn handle_name(&mut self, bytes_start: &BytesStart) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle_name<R: XmlReader>(
+        &mut self,
+        reader: &R,
+        bytes_start: &BytesStart,
+    ) -> Result<(), Error> {
         for attr_result in bytes_start.attributes() {
             let a = attr_result?;
             if a.key.as_ref() == b"name" {
-                let name = a.decode_and_unescape_value(bytes_start.decoder())?;
-                self.name = DateStampNameType::from_str(&name).ok();
+                self.name = Some(DateStampNameType::deserialize_bytes(reader, &a.value)?);
             }
         }
         Ok(())
     }
 
-    fn handle_datetime(
+    fn handle_datetime<R: XmlReader>(
         &mut self,
+        reader: &R,
         bytes_start: &BytesStart,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Error> {
         for attr_result in bytes_start.attributes() {
             let a = attr_result?;
             if a.key.as_ref() == b"zone" {
@@ -104,7 +110,11 @@ impl DateStampTypeDeserializer {
                     "NDT" | "NST" | "HAT" | "HNT" => Some(Tz::Canada__Newfoundland),
                     "PDT" | "PST" | "HAP" | "HNP" => Some(Tz::Canada__Pacific),
                     "UTC" => Some(Tz::UTC),
-                    _ => None,
+                    _ => {
+                        return Err(reader.map_error(ErrorKind::UnknownOrInvalidValue(
+                            RawByteStr::from_slice(&a.value),
+                        )));
+                    }
                 };
 
                 self.timezone = timezone;
@@ -152,8 +162,8 @@ impl<'de> Deserializer<'de, DateStampType> for DateStampTypeDeserializer {
                 match bytes_start.name().as_ref() {
                     b"dateTime" => {
                         self.state = DateStampTypeDeserializerState::DateTime;
-                        self.handle_name(&bytes_start);
-                        self.handle_datetime(&bytes_start);
+                        self.handle_name(reader, bytes_start)?;
+                        self.handle_datetime(reader, bytes_start)?;
                     }
                     b"year" => self.state = DateStampTypeDeserializerState::Year,
                     b"month" => self.state = DateStampTypeDeserializerState::Month,
@@ -200,11 +210,11 @@ impl<'de> Deserializer<'de, DateStampType> for DateStampTypeDeserializer {
             }
             Event::Text(ref bytes_text) => {
                 let _ = match self.state {
-                    DateStampTypeDeserializerState::Year => self.set_year(&bytes_text),
-                    DateStampTypeDeserializerState::Month => self.set_month(&bytes_text),
-                    DateStampTypeDeserializerState::Day => self.set_day(&bytes_text),
-                    DateStampTypeDeserializerState::Hour => self.set_hour(&bytes_text),
-                    DateStampTypeDeserializerState::Minute => self.set_minute(&bytes_text),
+                    DateStampTypeDeserializerState::Year => self.set_year(bytes_text),
+                    DateStampTypeDeserializerState::Month => self.set_month(bytes_text),
+                    DateStampTypeDeserializerState::Day => self.set_day(bytes_text),
+                    DateStampTypeDeserializerState::Hour => self.set_hour(bytes_text),
+                    DateStampTypeDeserializerState::Minute => self.set_minute(bytes_text),
                     DateStampTypeDeserializerState::Init__
                     | DateStampTypeDeserializerState::DateTime
                     | DateStampTypeDeserializerState::Unknown__ => Ok(()),
@@ -215,13 +225,7 @@ impl<'de> Deserializer<'de, DateStampType> for DateStampTypeDeserializer {
                     allow_any: false,
                 });
             }
-            Event::CData(_)
-            | Event::Comment(_)
-            | Event::Decl(_)
-            | Event::PI(_)
-            | Event::DocType(_)
-            | Event::GeneralRef(_)
-            | Event::Eof => {
+            _ => {
                 return Ok(DeserializerOutput {
                     artifact: DeserializerArtifact::Deserializer(self),
                     event: DeserializerEvent::None,
