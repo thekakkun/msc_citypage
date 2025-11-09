@@ -7,7 +7,6 @@ documentation = "https://docs.rs/msc_citypage/"
 readme = "README.md"
 repository = "https://github.com/thekakkun/msc_citypage"
 license-file = "LICENSE"
-build = "build/main.rs"
 
 [dependencies]
 async-stream = "0.3.6"
@@ -17,19 +16,13 @@ futures-core = "0.3.31"
 futures-util = "0.3.31"
 hostname = "0.4.1"
 lapin = "3.4.0"
-quick-xml = "0.38.3"
-quote = "1.0.40"
+quick-xml = { version = "0.38.3", features = ["serialize"] }
 serde = "1.0.219"
 tokio = { version = "1.47.1", features = ["macros", "rt"] }
 url = "2.5.7"
-xsd-parser = "1.3.0"
 
 [dev-dependencies]
 futures-util = "0.3.31"
+quick-xml = { version = "0.38.3", features = ["encoding", "serialize"] }
 reqwest = "0.12.23"
 url = "2.5.7"
-xsd-parser = "1.3.0"
-
-[build-dependencies]
-quote = "1.0.40"
-xsd-parser = "1.3.0"

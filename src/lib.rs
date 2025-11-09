@@ -1,5 +1,10 @@
-pub mod consumer;
 pub mod models;
+pub mod stream;
 
-pub use consumer::CityPageStream;
-pub use models::site::SiteData;
+pub use models::site_data::SiteData;
+pub use stream::CityPageStream;
+
+pub enum Language {
+    English,
+    Français,
+}

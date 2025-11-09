@@ -1,5 +1,8 @@
-pub mod forecast_full;
-pub mod general;
-pub mod site;
-pub mod site_list;
-pub mod weather;
+pub mod catalog;
+pub mod common;
+pub mod current;
+pub mod forecast;
+pub mod location;
+pub mod measurements;
+pub mod site_data;
+pub mod warnings;
