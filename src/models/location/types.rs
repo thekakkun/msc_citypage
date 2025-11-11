@@ -1,7 +1,6 @@
 use serde::Deserialize;
 
-use super::province::Province;
-use crate::models::common::empty_string_as_none;
+use crate::models::{common::empty_string_as_none, location::Province};
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct Location {

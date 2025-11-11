@@ -1,15 +1,19 @@
-use std::{fs::File, io::BufReader};
+use std::error::Error;
 
-use msc_citypage::SiteData;
-use quick_xml::de::from_reader;
+use msc_citypage::{Language, SiteData, get_latest, sites::Ontario};
+use quick_xml::de::from_str;
 
-/// An example of deserializing a SiteData XML.
-fn main() {
-    let input_file = File::open("examples/data.xml").unwrap();
-    let reader = BufReader::new(input_file);
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Box<dyn Error>> {
+    if let Ok(url) = get_latest(Ontario::Toronto, Language::English).await {
+        let response = reqwest::get(url).await?;
+        let xml_str = response.text().await?;
 
-    match from_reader::<_, SiteData>(reader) {
-        Ok(site_data) => println!("{:#?}", site_data),
-        Err(e) => eprintln!("Error: {}", e),
+        match from_str::<SiteData>(&xml_str) {
+            Ok(site_data) => println!("{:#?}", site_data),
+            Err(e) => eprintln!("Error: {}", e),
+        }
     }
+
+    Ok(())
 }

@@ -32,7 +32,7 @@ pub struct HourlyForecast {
     #[serde(default)]
     pub uv: Option<UvHourly>,
     #[serde(
-        rename = "dateTimeUTC",
+        rename = "@dateTimeUTC",
         default,
         deserialize_with = "deserialize_some_date_time"
     )]

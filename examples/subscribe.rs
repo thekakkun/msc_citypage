@@ -2,22 +2,28 @@ use futures_util::stream::StreamExt;
 use quick_xml::de::from_str;
 use std::error::Error;
 
-use msc_citypage::{CityPageStream, SiteData};
+use msc_citypage::{CityPageStream, Language, SiteData, sites::Ontario};
 
-/// An example of subscribing to the MSC citypage AMQP stream.
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let mut stream = CityPageStream::new().await?;
+    // Initialize the stream for English weather data from Toronto, Ontario
+    let mut stream = CityPageStream::new(Ontario::Toronto, Language::English).await?;
 
-    while let Some((datetime, url)) = stream.next().await {
-        println!("Received: {}: {}", datetime, url);
+    while let Some(result) = stream.next().await {
+        match result {
+            Ok(url) => {
+                println!("Received: {}", url);
 
-        let response = reqwest::get(url).await?;
-        let xml_str = response.text().await?;
+                let response = reqwest::get(url).await?;
+                let xml_str = response.text().await?;
 
-        match from_str::<SiteData>(&xml_str) {
-            Ok(site_data) => println!("{:#?}", site_data),
-            Err(e) => eprintln!("Error: {}", e),
+                // Deserialize the xml
+                match from_str::<SiteData>(&xml_str) {
+                    Ok(site_data) => println!("{:?}", site_data),
+                    Err(e) => eprintln!("Deserialization error: {}", e),
+                }
+            }
+            Err(e) => eprintln!("Stream error: {}", e),
         }
     }
     Ok(())

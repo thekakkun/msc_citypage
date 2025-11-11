@@ -38,7 +38,17 @@ impl TryFrom<DateStamp> for DateTime<Tz> {
                 0,
             )
             .single()
-            .unwrap();
+            .ok_or_else(|| {
+                format!(
+                    "Invalid or ambiguous datetime: {}-{:02}-{:02} {:02}:{:02}:00 {}",
+                    value.year,
+                    value.month.number_from_month(),
+                    value.day.value,
+                    value.hour,
+                    value.minute,
+                    tz
+                )
+            })?;
 
         Ok(datetime)
     }
