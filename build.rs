@@ -1,6 +1,6 @@
 use heck::ToPascalCase;
-use quick_xml::de::from_reader;
 use msc_citypage_sites::{Province, Site, SiteList};
+use quick_xml::de::from_reader;
 use std::collections::BTreeMap;
 use std::env;
 use std::fs::File;

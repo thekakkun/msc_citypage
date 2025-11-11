@@ -3,8 +3,8 @@ pub use msc_citypage_sites::{Site, SiteList};
 #[cfg(test)]
 mod tests {
     use super::*;
-    use quick_xml::de::from_str;
     use msc_citypage_sites::Province;
+    use quick_xml::de::from_str;
 
     #[test]
     fn test_deserialize_site() {
