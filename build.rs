@@ -9,10 +9,10 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    println!("cargo:rerun-if-changed=msc_citypage_sites/siteList.xml");
+    println!("cargo:rerun-if-changed=siteList.xml");
     println!("cargo:rerun-if-changed=msc_citypage_sites/src/lib.rs");
 
-    let xml_path = "msc_citypage_sites/siteList.xml";
+    let xml_path = "siteList.xml";
     let file = File::open(xml_path).expect("Failed to open siteList.xml");
     let reader = BufReader::new(file);
     let site_list: SiteList = from_reader(reader).expect("Failed to parse siteList.xml");
