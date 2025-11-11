@@ -1,10 +1,10 @@
-pub use site_list_types::{Site, SiteList};
+pub use msc_citypage_sites::{Site, SiteList};
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use quick_xml::de::from_str;
-    use site_list_types::Province;
+    use msc_citypage_sites::Province;
 
     #[test]
     fn test_deserialize_site() {

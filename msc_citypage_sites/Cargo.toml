@@ -1,0 +1,14 @@
+[package]
+name = "msc_citypage_sites"
+version = "0.1.0"
+edition = "2024"
+description = "Meterological Service of Canada weather sites sub-library for use in msc_citypage"
+documentation = "https://docs.rs/msc_citypage_sites/"
+repository = "https://github.com/thekakkun/msc_citypage"
+license-file = "LICENSE"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+quick-xml = { version = "0.38.3", features = ["serialize"] }
