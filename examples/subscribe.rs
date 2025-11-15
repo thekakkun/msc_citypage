@@ -1,11 +1,10 @@
 use futures_util::stream::StreamExt;
 use quick_xml::de::from_str;
-use std::error::Error;
 
-use msc_citypage::{CityPageStream, Language, SiteData, sites::Ontario};
+use msc_citypage::{CityPageStream, Error, Language, SiteData, sites::Ontario};
 
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), Error> {
     // Initialize the stream for English weather data from Toronto, Ontario
     let mut stream = CityPageStream::new(Ontario::Toronto, Language::English).await?;
 
