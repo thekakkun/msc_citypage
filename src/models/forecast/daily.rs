@@ -1,8 +1,8 @@
 use serde::{Deserialize, Deserializer, de};
 
 use crate::models::{
-    common::{DateStamp, Format, Period, empty_string_as_none},
-    forecast::{ForecastConditionIcon, Frost, RegionalNormals, SnowLevel},
+    common::{DateStamp, Period, empty_string_as_none},
+    forecast::{ForecastIconCode, Frost, RegionalNormals, SnowLevel},
     measurements::{
         humidex::Humidex, humidity::RelativeHumidity, precipitation::Precipitation,
         temperature::Temperatures, uv::Uv, visibility::Visibility, wind::Winds,
@@ -95,18 +95,10 @@ pub struct CloudPrecip {
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AbbreviatedForecast {
-    pub icon_code: IconCode,
+    pub icon_code: ForecastIconCode,
     pub pop: Pop,
     #[serde(default)]
     pub text_summary: Option<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq)]
-pub struct IconCode {
-    #[serde(rename = "$text", default, deserialize_with = "empty_string_as_none")]
-    pub value: Option<ForecastConditionIcon>,
-    #[serde(rename = "@format")]
-    pub format: Option<Format>,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]

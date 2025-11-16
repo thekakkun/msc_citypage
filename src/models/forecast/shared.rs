@@ -1,7 +1,8 @@
 use serde::Deserialize;
 
 use crate::models::{
-    common::{DateStamp, empty_string_as_none},
+    common::{DateStamp, Format, empty_string_as_none},
+    forecast::ForecastConditionIcon,
     measurements::temperature::Temperature,
 };
 
@@ -36,4 +37,12 @@ pub struct SnowLevel {
 pub struct Frost {
     #[serde(default, deserialize_with = "empty_string_as_none")]
     pub text_summary: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct ForecastIconCode {
+    #[serde(rename = "$text", default, deserialize_with = "empty_string_as_none")]
+    pub value: Option<ForecastConditionIcon>,
+    #[serde(rename = "@format")]
+    pub format: Option<Format>,
 }

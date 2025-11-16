@@ -11,7 +11,7 @@ use crate::models::{
 };
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
-pub struct IconCode {
+pub struct CurrentIconCode {
     #[serde(rename = "$text", default, deserialize_with = "empty_string_as_none")]
     pub value: Option<CurrentConditionIcon>,
     #[serde(rename = "@format", default)]
@@ -25,7 +25,7 @@ pub struct CurrentConditions {
     pub date_time: Option<Vec<DateStamp>>,
     #[serde(default, deserialize_with = "empty_string_as_none")]
     pub condition: Option<String>,
-    pub icon_code: Option<IconCode>,
+    pub icon_code: Option<CurrentIconCode>,
     pub temperature: Option<Temperature>,
     pub dewpoint: Option<Temperature>,
     pub wind_chill: Option<CalculatedWindChill>,
