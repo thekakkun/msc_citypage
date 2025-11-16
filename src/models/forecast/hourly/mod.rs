@@ -1,14 +1,24 @@
 mod measurements;
 
 pub use measurements::{
-    HumidexHourly, IconCodeHourly, LopHourly, TemperatureHourly, UvHourly, WindChillHourly,
-    WindHourly,
+    HumidexHourly, LopHourly, TemperatureHourly, UvHourly, WindChillHourly, WindHourly,
 };
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Deserializer};
 
-use crate::models::common::DateStamp;
+use crate::models::{
+    common::{DateStamp, Format},
+    forecast::ForecastConditionIcon,
+};
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct IconCode {
+    #[serde(rename = "$text")]
+    pub value: ForecastConditionIcon,
+    #[serde(rename = "@format", default)]
+    pub format: Option<Format>,
+}
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -23,7 +33,7 @@ pub struct HourlyForecastGroup {
 #[serde(rename_all = "camelCase")]
 pub struct HourlyForecast {
     pub condition: String,
-    pub icon_code: IconCodeHourly,
+    pub icon_code: IconCode,
     pub temperature: TemperatureHourly,
     pub lop: LopHourly,
     pub wind_chill: WindChillHourly,

@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 use crate::models::{
-    common::{Format, empty_string_as_none},
+    common::empty_string_as_none,
     forecast::PopUnit,
     measurements::{
         UnitType,
@@ -9,14 +9,6 @@ use crate::models::{
         wind::{WindDirectionValue, WindSpeed},
     },
 };
-
-#[derive(Clone, Debug, Deserialize, PartialEq)]
-pub struct IconCodeHourly {
-    #[serde(rename = "$text")]
-    pub value: String,
-    #[serde(rename = "@format", default)]
-    pub format: Option<Format>,
-}
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct TemperatureHourly {
