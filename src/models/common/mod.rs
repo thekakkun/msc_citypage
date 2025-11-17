@@ -2,7 +2,7 @@ mod date_stamp;
 mod period;
 pub mod serde_helpers;
 
-pub use date_stamp::DateStamp;
+pub use date_stamp::{DateStamp, DateStampName};
 pub use period::Period;
 pub use serde_helpers::{
     deserialize_some_f64, deserialize_some_i16, deserialize_some_u16, empty_string_as_none,
