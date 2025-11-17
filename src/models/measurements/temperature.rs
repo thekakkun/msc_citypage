@@ -7,8 +7,8 @@ use crate::models::{common::empty_string_as_none, measurements::UnitType};
 pub struct Temperatures {
     #[serde(default)]
     pub text_summary: Option<String>,
-    #[serde(rename = "temperature", default)]
-    pub temperature: Vec<Temperature>,
+    #[serde(rename = "temperature")]
+    pub temperature: Temperature,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
