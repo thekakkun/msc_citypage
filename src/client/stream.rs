@@ -89,7 +89,7 @@ where
             .await?;
 
         let routing_key = format!(
-            "v02.post.*.WXO-DD.citypage_weather.{}.#",
+            "v02.post.*.WXO-DD.citypage_weather.{}.*",
             site.province().abbr()
         );
         channel
@@ -113,10 +113,6 @@ where
     }
 
     fn handle_delivery(&self, delivery: &Delivery) -> Result<Option<Url>, Error> {
-        if delivery.routing_key.as_str().contains("mp3") {
-            return Ok(None);
-        }
-
         let body = from_utf8(&delivery.data)?;
         let mut iter = body.split_whitespace();
 
